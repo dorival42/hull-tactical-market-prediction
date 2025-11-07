@@ -1,9 +1,14 @@
-# hull-tactical-market-prediction
+
 # 🎯 HULL TACTICAL - MARKET PREDICTION
 ## Analyse Complète du Challenge Kaggle
 
 **Date de l'analyse :** 7 Novembre 2025  
-**Participant :** Analyse préliminaire
+**Participant :** 
+- Pierre Chrislin DORIVAL
+- Emile STEEVENSON
+- Jobed FELIMA
+- Sebastien Witchmen ESTANIS
+  
 
 ---
 
