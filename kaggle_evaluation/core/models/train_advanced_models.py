@@ -17,7 +17,7 @@ Date: 7 Novembre 2025
 """
 
 import sys
-sys.path.append('/home/claude')
+sys.path.append('./kaggle_evaluation/core/models')
 
 import pandas as pd
 import numpy as np
