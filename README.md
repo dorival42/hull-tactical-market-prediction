@@ -42,7 +42,7 @@ Remettre en question l'**Hypothèse des Marchés Efficaces (EMH)** qui stipule q
 
 ### Particularité unique
 
-Contrairement à la plupart des compétitions Kaggle, vos modèles seront **exécutés en temps réel** sur le marché pendant 6 mois après la deadline de soumission.
+Contrairement à la plupart des compétitions Kaggle, Nos modèles seront **exécutés en temps réel** sur le marché pendant 6 mois après la deadline de soumission.
 
 ---
 
@@ -116,7 +116,7 @@ hull-tactical-market-prediction/
      4. MAD = Median Absolute Deviation de deviation
      5. market_forward_excess_returns = winsorize(deviation, MAD × 4)
      ```
-   - **C'est cette valeur que vous devez prédire**
+   - **C'est cette valeur que nous devons prédire**
 
 ---
 
@@ -136,7 +136,7 @@ hull-tactical-market-prediction/
 | **`lagged_market_forward_excess_returns`** | `market_forward_excess_returns` avec 1 jour de retard |
 
 **⚠️ Pourquoi le lag ?**  
-Simule la réalité : vous ne connaissez les rendements qu'**après la clôture** du marché. Cela évite le "look-ahead bias".
+Simule la réalité : nous ne connaissons les rendements qu'**après la clôture** du marché. Cela évite le "look-ahead bias".
 
 ---
 
@@ -200,7 +200,7 @@ class DefaultGateway(kaggle_evaluation.core.templates.Gateway):
 ```
 
 #### 2. **InferenceServer** (`default_inference_server.py`)
-- **Rôle** : Votre code de prédiction
+- **Rôle** : Notre code de prédiction
 - **Responsabilités** :
   - Recevoir les batches de données
   - Générer les prédictions
@@ -209,7 +209,7 @@ class DefaultGateway(kaggle_evaluation.core.templates.Gateway):
 ```python
 class DefaultInferenceServer(kaggle_evaluation.core.templates.InferenceServer):
     def predict(self, test_batch):
-        # VOTRE CODE ICI
+        # Notre  CODE ICI
         # Retourner une allocation entre 0.0 et 2.0
         return allocation
 ```
@@ -222,7 +222,7 @@ class DefaultInferenceServer(kaggle_evaluation.core.templates.InferenceServer):
 
 ## 📤 MÉTHODOLOGIE DE SOUMISSION
 
-### Ce que vous devez soumettre
+### Ce que nous devons soumettre
 
 **UN NOTEBOOK** qui :
 1. Définit une fonction `predict(test_batch)`
@@ -254,15 +254,15 @@ def predict(test_batch):
     Returns:
         float ou Series: Allocation entre 0.0 et 2.0
     """
-    # Votre modèle de prédiction
-    prediction = your_model.predict(test_batch)
+    # Notre modèle de prédiction
+    prediction = model.predict(test_batch)
     
     # Convertir en allocation (0.0 à 2.0)
     allocation = convert_to_allocation(prediction)
     
     return allocation
 
-# Créer le serveur avec votre fonction predict
+# Créer le serveur avec notre fonction predict
 inference_server = default_inference_server.DefaultInferenceServer(predict)
 
 # Tester localement
@@ -608,7 +608,7 @@ class MarketPredictor(nn.Module):
 
 ---
 
-## 🚀 PROCHAINES ÉTAPES
+## 🚀  ÉTAPES DU DEVELOPPEMLENT DU PROJET
 
 ### Étape 1 : EDA Approfondie
 1. Charger et explorer `train.csv`
@@ -687,4 +687,5 @@ class MarketPredictor(nn.Module):
 
 ---
 
-**Bonne chance dans cette compétition passionnante qui pourrait remettre en question l'une des théories fondamentales de la finance moderne ! 🚀📈**
+**cette compétition est passionnante, elle pourrait remettre en question l'une des théories fondamentales de la finance moderne ! 🚀📈**
+** 🚀 Cest une atout pour notre future Carrière dans la Finance, Data science sur Machine learning **
