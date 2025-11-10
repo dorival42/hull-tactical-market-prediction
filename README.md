@@ -49,27 +49,93 @@ Contrairement à la plupart des compétitions Kaggle, Nos modèles seront **exé
 ## 📁 STRUCTURE DES FICHIERS
 
 ```
-hull-tactical-market-prediction/
-│
-├── train.csv                    # 8,991 lignes (décennies de données historiques)
-├── test.csv                     # 11 lignes (mock test set)
-│
-└── kaggle_evaluation/           # API d'évaluation
-    ├── __init__.py
-    ├── default_gateway.py       # Gateway par défaut
-    ├── default_inference_server.py  # Serveur d'inférence
-    │
-    └── core/
-        ├── __init__.py
-        ├── base_gateway.py      # Implémentation de base
-        ├── templates.py         # Templates pour Gateway et InferenceServer
-        ├── relay.py             # Communication gRPC
-        ├── kaggle_evaluation.proto
-        │
-        └── generated/
-            ├── __init__.py
-            ├── kaggle_evaluation_pb2.py
-            └── kaggle_evaluation_pb2_grpc.py
+.
+├── README.md
+├── kaggle_evaluation
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-313.pyc
+│   │   └── default_gateway.cpython-313.pyc
+│   ├── core
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-313.pyc
+│   │   │   ├── analyze_results.cpython-313.pyc
+│   │   │   ├── base_gateway.cpython-313.pyc
+│   │   │   ├── baseline_model.cpython-313.pyc
+│   │   │   ├── baseline_model_v9.cpython-313.pyc
+│   │   │   ├── data_processing.cpython-310.pyc
+│   │   │   ├── data_processing.cpython-313.pyc
+│   │   │   ├── debug_model.cpython-313.pyc
+│   │   │   ├── default_inference_server.cpython-313.pyc
+│   │   │   ├── preprocessor_simple.cpython-313.pyc
+│   │   │   ├── preprocessor_v2.cpython-313.pyc
+│   │   │   ├── relay.cpython-313.pyc
+│   │   │   ├── templates.cpython-313.pyc
+│   │   │   ├── test_data_processing.cpython-313.pyc
+│   │   │   ├── test_local.cpython-313.pyc
+│   │   │   ├── test_real_simple.cpython-313.pyc
+│   │   │   └── test_simple_prep.cpython-313.pyc
+│   │   ├── base_gateway.py
+│   │   ├── eda
+│   │   │   ├── eda_hull_tactical.py
+│   │   │   └── eda_visualization.py
+│   │   ├── feature_engineering
+│   │   │   ├── __init__.py
+│   │   │   ├── __pycache__
+│   │   │   │   ├── __init__.cpython-310.pyc
+│   │   │   │   └── feature_engineer.cpython-310.pyc
+│   │   │   └── feature_engineer.py
+│   │   ├── files_results
+│   │   │   ├── sharpe_results.csv
+│   │   │   └── validation_summary.csv
+│   │   ├── generated
+│   │   │   ├── __init__.py
+│   │   │   ├── __pycache__
+│   │   │   │   ├── __init__.cpython-313.pyc
+│   │   │   │   ├── kaggle_evaluation_pb2.cpython-313.pyc
+│   │   │   │   └── kaggle_evaluation_pb2_grpc.cpython-313.pyc
+│   │   │   ├── kaggle_evaluation_pb2.py
+│   │   │   └── kaggle_evaluation_pb2_grpc.py
+│   │   ├── kaggle_evaluation.proto
+│   │   ├── models
+│   │   │   ├── __pycache__
+│   │   │   │   ├── base_model.cpython-310.pyc
+│   │   │   │   ├── deep_learning_models.cpython-310.pyc
+│   │   │   │   ├── feature_engineer.cpython-310.pyc
+│   │   │   │   └── gradient_boosting_models.cpython-310.pyc
+│   │   │   ├── lightgbm_final.pkl
+│   │   │   ├── random_forest_final.pkl
+│   │   │   ├── selected_features.json
+│   │   │   ├── train_advanced_models.py
+│   │   │   └── xgboost_final.pkl
+│   │   ├── relay.py
+│   │   ├── src
+│   │   │   ├── __init__.py
+│   │   │   ├── __pycache__
+│   │   │   │   ├── base_model.cpython-310.pyc
+│   │   │   │   └── gradient_boosting_models.cpython-310.pyc
+│   │   │   ├── base_model.py
+│   │   │   ├── compare_all_models.py
+│   │   │   ├── deep_learning_models.py
+│   │   │   ├── gradient_boosting_models.py
+│   │   │   ├── model_baselinev1.py
+│   │   │   ├── model_gradient_boosting.py
+│   │   │   └── train_advanced_models.py
+│   │   ├── submissionv1.py
+│   │   └── templates.py
+│   └── default_gateway.py
+├── test.csv
+├── train.csv
+└── visualizations
+    ├── 01_target_distribution.png
+    ├── 02_time_series.png
+    ├── 03_missing_values.png
+    ├── 04_correlations.png
+    ├── 05_categories_missing.png
+    ├── 06_autocorrelation.png
+    ├── 07_components.png
+    └── 08_positive_negative.png
 ```
 
 ---
