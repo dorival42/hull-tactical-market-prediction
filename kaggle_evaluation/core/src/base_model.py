@@ -169,8 +169,8 @@ class ModelConfig:
         },
         'xgboost': {
             'objective': 'reg:squarederror',
-            'n_estimators': 500,
-            'learning_rate': 0.05,
+            'n_estimators': 700,
+            'learning_rate': 0.01,
             'max_depth': 5,
             'min_child_weight': 3,
             'subsample': 0.8,
@@ -291,88 +291,40 @@ class ModelMetrics:
     
     @staticmethod
     def calculate_sharpe_ratio(allocations: np.ndarray,
-                              returns: np.ndarray,
-                              risk_free_rates: np.ndarray,
-                              annualization_factor: int = 252) -> Dict[str, float]:
+                              target_returns: np.ndarray) -> Dict[str, float]:
         """
-        Calculer le Sharpe ratio et métriques associées.
+        Calcul Sharpe  sur market_forward_excess_returns.
         
         Args:
-            allocations: Allocations (0-2)
-            returns: Forward returns
-            risk_free_rates: Risk-free rates
-            annualization_factor: Facteur d'annualisation (252 pour daily)
-            
+            allocations: array [0, 2]
+            target_returns: market_forward_excess_returns (déjà excess)
+        
         Returns:
-            Dictionnaire de métriques
+            dict avec métriques Sharpe
         """
-        # Portfolio returns
-        portfolio_returns = allocations * returns
-        excess_returns = portfolio_returns - risk_free_rates
+        # Portfolio excess returns = allocation × target
+        # target est déjà excess (forward_returns - risk_free_rate)
+        portfolio_excess = allocations * target_returns
         
-        # Statistiques
-        mean_excess = excess_returns.mean()
-        std_excess = excess_returns.std()
+        # Annualiser (252 jours de trading)
+        annual_return = portfolio_excess.mean() * 252
+        annual_volatility = portfolio_excess.std() * np.sqrt(252)
         
-        # Sharpe ratio annualisé
-        sharpe = (mean_excess / std_excess) * np.sqrt(annualization_factor) if std_excess > 0 else 0
+        # Sharpe Ratio
+        sharpe_ratio = (annual_return / annual_volatility 
+                        if annual_volatility > 0 else 0.0)
         
-        # Rendement et volatilité annualisés
-        ann_return = mean_excess * annualization_factor
-        ann_volatility = std_excess * np.sqrt(annualization_factor)
-        
-        # Volatilité du marché
-        market_vol = returns.std()
-        vol_ratio = std_excess / market_vol if market_vol > 0 else 0
+        # Contrainte Kaggle: Volatility Ratio ≤ 1.5
+        market_volatility = target_returns.std() * np.sqrt(252)
+        volatility_ratio = (annual_volatility / market_volatility 
+                            if market_volatility > 0 else 0.0)
+        exceeds_constraint = volatility_ratio > 1.5
         
         return {
-            'sharpe_ratio': sharpe,
-            'annualized_return': ann_return,
-            'annualized_volatility': ann_volatility,
-            'volatility_ratio': vol_ratio,
-            'mean_allocation': allocations.mean(),
-            'std_allocation': allocations.std(),
-            'exceeds_constraint': vol_ratio > 1.2
+            'sharpe_ratio': sharpe_ratio,
+            'annualized_return': annual_return,
+            'annualized_volatility': annual_volatility,
+            'volatility_ratio': volatility_ratio,
+            'exceeds_constraint': exceeds_constraint
         }
 
-
-if __name__ == '__main__':
-    print("="*80)
-    print("BASE MODEL CLASS - TEST")
-    print("="*80)
-    
-    # Test de ModelConfig
-    print("\n1. Test ModelConfig")
-    print("-" * 40)
-    lgb_params = ModelConfig.get_default_params('lightgbm')
-    print(f"Paramètres LightGBM par défaut:")
-    for key, value in list(lgb_params.items())[:5]:
-        print(f"   {key}: {value}")
-    
-    # Test de ModelMetrics
-    print("\n2. Test ModelMetrics")
-    print("-" * 40)
-    y_true = np.array([0.01, -0.005, 0.02, -0.01, 0.015])
-    y_pred = np.array([0.008, -0.003, 0.018, -0.012, 0.013])
-    
-    metrics = ModelMetrics.calculate_regression_metrics(y_true, y_pred)
-    print(f"Métriques de régression:")
-    for key, value in metrics.items():
-        print(f"   {key}: {value:.6f}")
-    
-    # Test Sharpe ratio
-    allocations = np.array([1.5, 0.5, 1.5, 0.5, 1.5])
-    returns = np.array([0.01, -0.005, 0.02, -0.01, 0.015])
-    risk_free = np.array([0.0001, 0.0001, 0.0001, 0.0001, 0.0001])
-    
-    sharpe_metrics = ModelMetrics.calculate_sharpe_ratio(allocations, returns, risk_free)
-    print(f"\nMétriques Sharpe:")
-    for key, value in sharpe_metrics.items():
-        if isinstance(value, bool):
-            print(f"   {key}: {value}")
-        else:
-            print(f"   {key}: {value:.4f}")
-    
-    print("\n" + "="*80)
-    print("✓ Tests de base réussis")
-    print("="*80)

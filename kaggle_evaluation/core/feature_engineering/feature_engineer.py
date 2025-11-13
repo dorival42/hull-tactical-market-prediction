@@ -268,12 +268,12 @@ class FeatureEngineer:
         # ========================================
         
            
-       # self._log(f"\n    Volatility of Volatility")
-       # for window in [20, 60]:
-       #     vol_col = f'lagged_forward_returns_rolling_std_{window}d'
-         #   if vol_col in df.columns:
-         #       new_col = f'vol_of_vol_{window}'
-          #      df[new_col] = df[vol_col].rolling(20).std()
+        self._log(f"\n    Volatility of Volatility")
+        for window in [20, 60]:
+            vol_col = f'lagged_forward_returns_rolling_std_{window}d'
+            if vol_col in df.columns:
+                new_col = f'vol_of_vol_{window}'
+                df[new_col] = df[vol_col].rolling(20).std()
         
         v_cols = [col for col in df.columns if col.startswith('V') and len(col) > 1 and col[1:].isdigit()]
         if v_cols:
@@ -293,11 +293,11 @@ class FeatureEngineer:
             df['feat_extreme_vol'] = (df['feat_high_vol'] | df['feat_low_vol']).astype(int)
             
             # Volatility percentile (position relative)
-           # df['feat_v_percentile'] = df['feat_v_mean'].rolling(252, min_periods=20).rank(pct=True)
+            df['feat_v_percentile'] = df['feat_v_mean'].rolling(252, min_periods=20).rank(pct=True)
             
             # Changement de volatilité
-           # df['feat_v_change'] = df['feat_v_mean'] - df['feat_v_mean'].shift(5)
-           # df['feat_v_pct_change'] = df['feat_v_mean'].pct_change(5)
+            df['feat_v_change'] = df['feat_v_mean'] - df['feat_v_mean'].shift(5)
+            df['feat_v_pct_change'] = df['feat_v_mean'].pct_change(5)
             
             self._log(f"        volatility features créées")
         
@@ -328,7 +328,7 @@ class FeatureEngineer:
             df['feat_momentum_consistency'] = df['feat_momentum_balance'] / (len(m_cols) + 1e-8)
             
             # Momentum change
-           # df['feat_m_change'] = df['feat_m_mean'] - df['feat_m_mean'].shift(5)
+            df['feat_m_change'] = df['feat_m_mean'] - df['feat_m_mean'].shift(5)
             
             self._log(f"        momentum features créées")
         
@@ -351,8 +351,8 @@ class FeatureEngineer:
             df['feat_extreme_sentiment'] = (df['feat_s_mean'].abs() > df['feat_s_mean'].abs().quantile(0.9)).astype(int)
             
             # Sentiment change
-            #df['feat_s_change'] = df['feat_s_mean'] - df['feat_s_mean'].shift(5)
-            #df['feat_s_pct_change'] = df['feat_s_mean'].pct_change(5)
+            df['feat_s_change'] = df['feat_s_mean'] - df['feat_s_mean'].shift(5)
+            df['feat_s_pct_change'] = df['feat_s_mean'].pct_change(5)
             
             self._log(f"        sentiment features créées")
         
@@ -370,7 +370,7 @@ class FeatureEngineer:
             df['feat_p_min'] = df[p_cols].min(axis=1)
             
             # Price change
-            #df['feat_p_change'] = df['feat_p_mean'] - df['feat_p_mean'].shift(5)
+            df['feat_p_change'] = df['feat_p_mean'] - df['feat_p_mean'].shift(5)
             
             self._log(f"        price features créées")
         
@@ -407,7 +407,7 @@ class FeatureEngineer:
             df['feat_e_std'] = df[e_cols].std(axis=1)
             
             # Economic change
-           # df['feat_e_change'] = df['feat_e_mean'] - df['feat_e_mean'].shift(20)
+            df['feat_e_change'] = df['feat_e_mean'] - df['feat_e_mean'].shift(20)
             
             self._log(f"       economic features créées")
         
@@ -415,20 +415,20 @@ class FeatureEngineer:
         # 8. INTERACTIONS ENTRE GROUPES
         # ========================================
 
-       # self._log(f"\n    RSI (Relative Strength Index)")
-       # def calculate_rsi(data, window=14):
-       #     delta = data.diff()
-       #     gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
-       #     loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
-       #     rs = gain / loss
-       #     rsi = 100 - (100 / (1 + rs))
-       #     return rsi
+        self._log(f"\n    RSI (Relative Strength Index)")
+        def calculate_rsi(data, window=14):
+            delta = data.diff()
+            gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
+            rs = gain / loss
+            rsi = 100 - (100 / (1 + rs))
+            return rsi
 #
-       # for col in ['lagged_forward_returns', target_col]:
-       #     if col in df.columns:
-       #         for window in [7, 14, 21]:
-       #             new_col = f'feat_{col}_rsi_{window}'
-       #             df[new_col] = calculate_rsi(df[col], window)
+        for col in ['lagged_forward_returns', target_col]:
+            if col in df.columns:
+                for window in [7, 14, 21]:
+                    new_col = f'feat_{col}_rsi_{window}'
+                    df[new_col] = calculate_rsi(df[col], window)
 
         self._log(f"\n   MACD (Moving Average Convergence Divergence)")
         for col in ['lagged_forward_returns', target_col]:
@@ -560,6 +560,10 @@ class FeatureEngineer:
         Returns:
             Liste de noms de features
         """
+
+        n_rows = df.shape[0]
+        if n_features is None:
+            n_features = min(150, n_rows)
         
         if self.verbose:
             print(f"\n   Sélection des {n_features} meilleures features (méthode: {method})...")

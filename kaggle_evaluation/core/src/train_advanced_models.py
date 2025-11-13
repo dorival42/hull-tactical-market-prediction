@@ -30,7 +30,7 @@ warnings.filterwarnings('ignore')
 from base_model import ModelMetrics
 from feature_engineering.feature_engineer import FeatureEngineer
 from gradient_boosting_models import (
-    LightGBMModel, XGBoostModel, RandomForestModel
+    LightGBMModel, XGBoostModel, RandomForestModel, CatBoostModel
 )
 
 print("="*80)
@@ -47,34 +47,41 @@ print("="*80)
 
 # Charger les données
 train = pd.read_csv('train.csv')
-test = pd.read_csv('test.csv')
 
-print(f"Valeurs manquantes dans test:\n{test.isna().sum()}")
-print(f"\n✓ Données train chargées: {train.shape[0]:,} lignes × {train.shape[1]} colonnes")
+#print(f"\n Valeurs manquantes dans train:\n{train.isna().sum().sum()}")
+
+print(f"\n Données train chargées: {train.shape[0]:,} lignes × {train.shape[1]} colonnes")
 
 
-print(f"\n✓ Données test chargées:  {test.shape[0]:,} lignes × {test.shape[1]} colonnes")
+#test = pd.read_csv('test.csv')
+
+#print(f"\n Valeurs manquantes dans test:\n{test.isna().sum().sum}")
+
+
+#print(f"\n Données test chargées:  {test.shape[0]:,} lignes × {test.shape[1]} colonnes")
 
 
 # Utiliser données récentes (moins de valeurs manquantes)
-CUTOFF_DATE = 7000
-train_clean = train[train['date_id'] >= CUTOFF_DATE].copy()
-print(f"\n✓ Après cutoff (date_id >= {CUTOFF_DATE}): {train_clean.shape[0]:,} lignes")
+#CUTOFF_DATE = 7000
+#train_clean = train[train['date_id'] >= CUTOFF_DATE].copy()
+#print(f"\n✓ Après cutoff (date_id >= {CUTOFF_DATE}): {train_clean.shape[0]:,} lignes")
 
 # Feature Engineering
 fe = FeatureEngineer(verbose=True)
-train_enhanced = fe.hull_transform(train_clean)
-print(f"\n✓ Après feature engineering: {train_enhanced.shape[0]:,} lignes × {train_enhanced.shape[1]} colonnes")
-
-test_enhanced = fe.hull_transform(test)
-print(f"\n✓ Après feature engineering (test): {test_enhanced.shape[0]:,} lignes × {test_enhanced.shape[1]} colonnes")
+train_enhanced = fe.hull_transform(train)
+print(f"\n Après feature engineering: {train_enhanced.shape[0]:,} lignes × {train_enhanced.shape[1]} colonnes")
+print(f"\n Valeurs manquantes dans train après transformation:\n{train_enhanced.isna().sum().sum}")
 
 
-print(test_enhanced.columns.tolist())
+#test_enhanced = fe.hull_transform(test)
+#print(f"\n✓ Après feature engineering (test): {test_enhanced.shape[0]:,} lignes × {test_enhanced.shape[1]} colonnes")
+#print(f"\n Valeurs manquantes dans test après transformation:\n{test_enhanced.isna().sum().sum}")
+
+#print(test_enhanced.columns.tolist())
 # Supprimer les lignes avec trop de NaN (dues aux rolling features)
-train_enhanced = train_enhanced.dropna(subset=['market_forward_excess_returns'])
-train_enhanced = train_enhanced.iloc[100:].copy()  # Skip first 100 rows (warm-up period)
-print(f"\n✓ Après suppression des NaN: {train_enhanced.shape[0]:,} lignes")
+#train_enhanced = train_enhanced.dropna(subset=['market_forward_excess_returns'])
+#train_enhanced = train_enhanced.iloc[100:].copy()  # Skip first 100 rows (warm-up period)
+#print(f"\n✓ Après suppression des NaN: {train_enhanced.shape[0]:,} lignes")
 
 # Feature Selection
 print("\n" + "-"*80)
@@ -86,34 +93,56 @@ exclude_cols = ['date_id', 'forward_returns', 'risk_free_rate', target_col]
 
 # Méthode 1: Corrélation
 selected_corr = fe.select_features(train_enhanced, target_col, 
-                                   method='correlation', n_features=(100))
+                                   method='correlation', n_features=90)
 
-# Méthode 2: Mutual Information
-#selected_mi = fe.select_features(train_enhanced, target_col,
- #                               method='mutual_info', n_features=150)
+ #Méthode 2: Mutual Information
+selected_mi = fe.select_features(train_enhanced, target_col,
+                                method='mutual_info', n_features=None)
 
 # Combiner les deux méthodes
-#selected_features = list(set(selected_corr[:50]) | set(selected_mi[:50]))
-#print(f"\n✓ {len(selected_features)} features sélectionnées au total")
+selected_features = list(set(selected_corr[:90]) | set(selected_mi[:90]))
+print(f"\n✓ {len(selected_features)} features sélectionnées au total")
 
 
 
-selected_features = selected_corr
+#selected_features = selected_corr
 print(f"\n✓ {len(selected_features)} features sélectionnées au total")
 
 
 #others_target_cols = ['forward_returns', 'risk_free_rate']
 important_cols = [col for col in train_enhanced.columns 
-                  if not col.startswith('feat_')
-                  and col not in exclude_cols]
+                  if not col.startswith('feat_') and col not in exclude_cols]
 
 
-train_enhanced = train_enhanced[['date_id'] + important_cols + selected_features +[target_col] ].copy()
-print(f"Les colonnes utilisées pour l'entraînement sont: {train_enhanced.columns.tolist()}")
-test_enhanced = test_enhanced[['date_id'] + important_cols + selected_features].copy()
+train_enhanced = train_enhanced[['date_id'] + important_cols + selected_features + [target_col]].copy()
 
-print(f"\n✓ Dataset final prêt pour l'entraînement: {train_enhanced.shape[0]:,} lignes : {train_enhanced.shape[1]} colonnes")
-print(f"Les colonnes utilisées pour l'entraînement sont: {train_enhanced.columns.tolist()}")
+
+# les colonnes train doit etre les memes que test autre que target
+
+
+# Colonnes manquantes dans le test (hors target)
+#missing_in_test = set(train_enhanced.columns) - set(test_enhanced.columns)
+#missing_in_test.discard(target_col)  # supprime la colonne target si elle est présente
+
+# Colonnes manquantes dans le train
+#missing_in_train = set(test_enhanced.columns) - set(train_enhanced.columns)
+
+# Supprimer les colonnes manquantes dans le train
+#for col in missing_in_test:
+ #   train_enhanced.drop(columns=col, inplace=True)
+
+# Supprimer les colonnes manquantes dans le test
+#for col in missing_in_train:
+ #   test_enhanced.drop(columns=col, inplace=True)
+
+
+
+print(f"\nLes colonnes utilisées pour l'entraînement sont: {train_enhanced.columns.tolist()}")
+
+#print(f"\nLes colonnes utilisées pour le test sont: {test_enhanced.columns.tolist()}")
+
+print(f"\n Dataset final prêt pour l'entraînement: {train_enhanced.shape[0]:,} lignes : {train_enhanced.shape[1]} colonnes")
+#print(f"\n Dataset final prêt pour le test: {test_enhanced.shape[0]:,} lignes : {test_enhanced.shape[1]} colonnes")
 # ═══════════════════════════════════════════════════════════════════════════════
 # 2. WALK-FORWARD VALIDATION
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -168,17 +197,31 @@ def walk_forward_validation(df: pd.DataFrame,
         
         train_fold.set_index('date_id', inplace=True)
         test_fold.set_index('date_id', inplace=True)
+
+        def convert_to_allocation(predictions, method='threshold'):
+            """Convertir prédictions en allocations."""
+            if method == 'threshold':
+                allocations = np.ones_like(predictions)
+                allocations[predictions > 0.003] = 1.8
+                allocations[(predictions > 0) & (predictions <= 0.003)] = 1.3
+                allocations[(predictions < 0) & (predictions >= -0.003)] = 0.7
+                allocations[predictions < -0.003] = 0.2
+            return np.clip(allocations, 0.0, 2.0)
         
+       
+        
+
         # Préparer les données
-        X_train = train_fold.fillna(0)
+        X_train = train_fold.drop(columns=target_col).fillna(0)
         y_train = train_fold[target_col]
-        X_test = test_fold.fillna(0)
+        X_test = test_fold.drop(columns=target_col).fillna(0)
         y_test = test_fold[target_col]
         
         # LightGBM
         lgb_model = LightGBMModel()
         lgb_model.fit(X_train, y_train)
         y_pred_lgb = lgb_model.predict(X_test)
+
         
         results['lightgbm']['predictions'].extend(y_pred_lgb)
         results['lightgbm']['actuals'].extend(y_test.values)
@@ -186,6 +229,17 @@ def walk_forward_validation(df: pd.DataFrame,
         metrics_lgb = ModelMetrics.calculate_regression_metrics(y_test.values, y_pred_lgb)
         results['lightgbm']['metrics'].append(metrics_lgb)
         print(f"      LightGBM - RMSE: {metrics_lgb['rmse']:.6f}, R²: {metrics_lgb['r2']:.4f}")
+
+        # Après chaque fold:
+        y_pred = lgb_model.predict(X_test)
+        allocations = convert_to_allocation(y_pred)
+
+        # Calculer Sharpe
+        sharpe = ModelMetrics.calculate_sharpe_ratio(
+            allocations,
+            test_fold['market_forward_excess_returns']
+        )
+        print(f"Sharpe fold {fold}: {sharpe}")
         
         # XGBoost
         xgb_model = XGBoostModel()
@@ -198,6 +252,19 @@ def walk_forward_validation(df: pd.DataFrame,
         metrics_xgb = ModelMetrics.calculate_regression_metrics(y_test.values, y_pred_xgb)
         results['xgboost']['metrics'].append(metrics_xgb)
         print(f"      XGBoost  - RMSE: {metrics_xgb['rmse']:.6f}, R²: {metrics_xgb['r2']:.4f}")
+
+        # Après chaque fold:
+        y_pred = xgb_model.predict(X_test)
+        allocations = convert_to_allocation(y_pred)
+
+        # Calculer Sharpe
+        sharpe = ModelMetrics.calculate_sharpe_ratio(
+            allocations,
+            test_fold['market_forward_excess_returns']
+        )
+        print(f"Sharpe fold {fold}: {sharpe}")
+
+
         
         # Random Forest
         rf_model = RandomForestModel()
@@ -210,16 +277,29 @@ def walk_forward_validation(df: pd.DataFrame,
         metrics_rf = ModelMetrics.calculate_regression_metrics(y_test.values, y_pred_rf)
         results['random_forest']['metrics'].append(metrics_rf)
         print(f"      RF       - RMSE: {metrics_rf['rmse']:.6f}, R²: {metrics_rf['r2']:.4f}")
+
+        # Après chaque fold:
+        y_pred = rf_model.predict(X_test)
+        allocations = convert_to_allocation(y_pred)
+
+        # Calculer Sharpe
+        sharpe = ModelMetrics.calculate_sharpe_ratio(
+            allocations,
+            test_fold['market_forward_excess_returns']
+        )
+        print(f"Sharpe fold {fold}: {sharpe}")
+
+        
     
     return results
 
 # Exécuter la validation
-wf_results = walk_forward_validation(train_enhanced, target_col, n_splits=5)
+#wf_results = walk_forward_validation(train_enhanced, target_col, n_splits=5)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 3. RÉSULTATS GLOBAUX
 # ═══════════════════════════════════════════════════════════════════════════════
-
+"""
 print("\n" + "="*80)
 print("3. RÉSULTATS GLOBAUX DE LA WALK-FORWARD VALIDATION")
 print("="*80)
@@ -259,7 +339,7 @@ print("-"*80)
 
 for _, row in summary_df.iterrows():
     print(f"{row['model']:<20} {row['global_rmse']:<15.6f} {row['global_r2']:<15.4f} {row['avg_rmse']:.6f}±{row['std_rmse']:.6f}")
-
+"""
 # ═══════════════════════════════════════════════════════════════════════════════
 # 4. ENTRAÎNEMENT FINAL SUR TOUTES LES DONNÉES
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -267,6 +347,8 @@ for _, row in summary_df.iterrows():
 print("\n" + "="*80)
 print("4. ENTRAÎNEMENT FINAL DES MEILLEURS MODÈLES")
 print("="*80)
+
+
 
 # Split final (80% train, 20% validation)
 split_idx = int(len(train_enhanced) * 0.8)
@@ -280,9 +362,9 @@ val_final.set_index('date_id', inplace=True)
 #val_final.pop('date_id', None)
 
 # Préparer les données
-X_train_final = train_final.fillna(0)
+X_train_final = train_final.drop(columns=target_col).fillna(0)
 y_train_final = train_final[target_col]
-X_val_final = val_final.fillna(0)
+X_val_final = val_final.drop(columns=target_col).fillna(0)
 y_val_final = val_final[target_col]
 
 print(f"\n   Train final: {len(train_final):,} lignes")
@@ -295,6 +377,11 @@ print("\n   Entraînement LightGBM...")
 lgb_final = LightGBMModel(name='LightGBM_Final')
 lgb_final.fit(X_train_final, y_train_final, X_val_final, y_val_final)
 final_models['lightgbm'] = lgb_final
+
+print("\n   Entraînement CatGBM...")
+cat_final = CatBoostModel(name='Catboost_Final')
+cat_final.fit(X_train_final, y_train_final, X_val_final, y_val_final)
+final_models['cacatboost'] = cat_final
 
 print("   Entraînement XGBoost...")
 xgb_final = XGBoostModel(name='XGBoost_Final')
@@ -345,8 +432,7 @@ for name, model in final_models.items():
     
     sharpe_metrics = ModelMetrics.calculate_sharpe_ratio(
         allocations,
-        val_final['forward_returns'].values,
-        val_final['risk_free_rate'].values
+        val_final['market_forward_excess_returns'].values
     )
     
     sharpe_metrics['model'] = name
@@ -357,7 +443,7 @@ for name, model in final_models.items():
     print(f"      Annual Return:     {sharpe_metrics['annualized_return']*100:+.2f}%")
     print(f"      Annual Volatility: {sharpe_metrics['annualized_volatility']*100:.2f}%")
     print(f"      Volatility Ratio:  {sharpe_metrics['volatility_ratio']:.2f}x")
-    print(f"      Constraint OK:     {'NON ❌' if sharpe_metrics['exceeds_constraint'] else 'OUI ✓'}")
+    print(f"      Constraint OK:     {'NON ' if sharpe_metrics['exceeds_constraint'] else 'OUI ✓'}")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 6. SAUVEGARDE DES MODÈLES ET RÉSULTATS
@@ -380,11 +466,11 @@ print("✓ Features sélectionnées sauvegardées")
 
 # Sauvegarder les résultats
 results_df = pd.DataFrame(sharpe_results)
-results_df.to_csv('../kaggle_evaluation/core/files_results/sharpe_results.csv', index=False)
+results_df.to_csv('./kaggle_evaluation/core/files_results/sharpe_results.csv', index=False)
 print("✓ Résultats Sharpe sauvegardés")
 
-summary_df.to_csv('../kaggle_evaluation/core/files_results/validation_summary.csv', index=False)
-print("✓ Résumé de validation sauvegardé")
+#summary_df.to_csv('./kaggle_evaluation/core/files_results/validation_summary.csv', index=False)
+#print("✓ Résumé de validation sauvegardé")
 
 print("\n" + "="*80)
 print("✓ ENTRAÎNEMENT AVANCÉ TERMINÉ")
@@ -395,3 +481,4 @@ best_model = max(sharpe_results, key=lambda x: x['sharpe_ratio'])
 print(f"\n🏆 MEILLEUR MODÈLE: {best_model['model'].upper()}")
 print(f"   Sharpe Ratio: {best_model['sharpe_ratio']:+.4f}")
 print(f"   Rendement:    {best_model['annualized_return']*100:+.2f}%")
+

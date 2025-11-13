@@ -43,30 +43,38 @@ print("="*80)
 # Charger données
 train = pd.read_csv('train.csv')
 CUTOFF_DATE = 7000
-train_clean = train[train['date_id'] >= CUTOFF_DATE].copy()
+train_clean = train.copy()
 
 # Feature Engineering
 fe = FeatureEngineer(verbose=False)
-train_enhanced = fe.create_all_features(train_clean)
-train_enhanced = train_enhanced.dropna(subset=['market_forward_excess_returns'])
-train_enhanced = train_enhanced.iloc[100:].copy()
+train_enhanced = fe._create_features(train_clean)
+train_enhanced = train_enhanced.dropna(subset=['market_forward_excess_returns', 'forward_returns', 'risk_free_rate'])
+train_enhanced = train_enhanced.copy()
 
 # Feature Selection
 target_col = 'market_forward_excess_returns'
 selected_features = fe.select_features(train_enhanced, target_col, 
-                                      method='correlation', n_features=30)
+                                      method='correlation', n_features=100)
 
+
+
+important_cols = [col for col in train_enhanced.columns 
+                  if not col.startswith('feat_') and col != "forward_returns" and col != "risk_free_rate"]
+
+
+train_enhanced = train_enhanced[ important_cols + selected_features ].copy()
 print(f"\n✓ Données préparées: {train_enhanced.shape[0]:,} lignes")
 print(f"✓ Features sélectionnées: {len(selected_features)}")
 
+train_enhanced = train_enhanced.set_index("date_id")
 # Split
 split_idx = int(len(train_enhanced) * 0.8)
 train_df = train_enhanced.iloc[:split_idx]
 val_df = train_enhanced.iloc[split_idx:]
 
-X_train = train_df[selected_features].fillna(0)
+X_train = train_df.fillna(0)
 y_train = train_df[target_col]
-X_val = val_df[selected_features].fillna(0)
+X_val = val_df.fillna(0)
 y_val = val_df[target_col]
 
 print(f"✓ Train: {len(train_df):,} | Val: {len(val_df):,}")
@@ -316,7 +324,7 @@ for model_type in ['Gradient Boosting', 'Deep Learning']:
     print(f"   Temps moyen:     {type_df['training_time'].mean():.2f}s")
 
 # Sauvegarder
-results_df.to_csv('../files_results/complete_comparison.csv', index=False)
+results_df.to_csv('./kaggle_evaluation/core/files_results/complete_comparison.csv', index=False)
 print("\n✓ Résultats sauvegardés: complete_comparison.csv")
 
 print("\n" + "="*80)
