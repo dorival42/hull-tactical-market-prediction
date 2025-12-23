@@ -195,18 +195,6 @@ class DefaultInferenceServer(kaggle_evaluation.core.templates.InferenceServer):
 2. Crée un `InferenceServer` avec cette fonction
 3. Démarre le serveur avec `server.serve()`
 
-### Format de la prédiction
-
-Pour chaque `date_id`, retourner une **allocation** :
-
-| Valeur | Signification |
-|--------|---------------|
-| **0.0** | 0% exposé au marché (cash) |
-| **0.5** | 50% exposé |
-| **1.0** | 100% exposé (position standard) |
-| **1.5** | 150% exposé (levier) |
-| **2.0** | 200% exposé (levier maximal autorisé) |
-
 ### Exemple minimal
 
 ```python
@@ -222,11 +210,9 @@ def predict(test_batch):
     """
     # Notre modèle de prédiction
     prediction = model.predict(test_batch)
+
     
-    # Convertir en allocation (0.0 à 2.0)
-    allocation = convert_to_allocation(prediction)
-    
-    return allocation
+    return prediction
 
 # Créer le serveur avec notre fonction predict
 inference_server = default_inference_server.DefaultInferenceServer(predict)
@@ -240,28 +226,7 @@ inference_server.serve()
 
 ---
 
-## 📏 MÉTRIQUE D'ÉVALUATION
 
-### Sharpe Ratio Modifié avec Contraintes
-
-La métrique est une **variante du Sharpe Ratio** qui pénalise :
-
-1. **Volatilité excessive** : > 120% de la volatilité du marché
-2. **Sous-performance** : Ne pas surperformer le rendement du marché
-
-### Formule (conceptuelle)
-
-```
-Score = (Rendement_stratégie - Rendement_marché) / Volatilité_stratégie
-
-Avec pénalités si :
-- Volatilité_stratégie > 1.2 × Volatilité_marché
-- Rendement_stratégie < Rendement_marché
-```
-
-**Le code exact de la métrique est disponible sur Kaggle.**
-
----
 
 ## 🎯 STRATÉGIE RECOMMANDÉE
 
@@ -308,7 +273,7 @@ print(correlation_with_target.sort_values(ascending=False))
 # Stratégies possibles :
 # 1. Limiter l'analyse aux années récentes (moins de missing)
 # 2. Forward fill pour certaines features (prix, taux)
-# 3. Modèles robustes aux missing (LightGBM, CatBoost)
+# 3. Modèles robustes aux missing (LightGBM)
 ```
 
 #### B. Features dérivées
@@ -372,15 +337,8 @@ model.fit(train[features], train['market_forward_excess_returns'])
 def predict(test_batch):
     pred_return = model.predict(test_batch[features])
     
-    # Stratégie d'allocation basée sur la prédiction
-    if pred_return > 0.005:
-        allocation = 1.5  # Bullish
-    elif pred_return < -0.005:
-        allocation = 0.3  # Bearish
-    else:
-        allocation = 1.0  # Neutre
     
-    return allocation
+    return  pred_return
 ```
 
 **Option 2 : Classification (Bear/Bull/Neutral)**
@@ -402,13 +360,8 @@ model.fit(train[features], train['signal'])
 def predict(test_batch):
     signal = model.predict(test_batch[features])[0]
     
-    allocation_map = {
-        'bear': 0.2,
-        'neutral': 1.0,
-        'bull': 1.8
-    }
     
-    return allocation_map[signal]
+    return signal
 ```
 
 ---
@@ -537,28 +490,7 @@ class MarketPredictor(nn.Module):
 
 ---
 
-## ⚠️ PIÈGES À ÉVITER
 
-### 1. Look-ahead bias
-❌ **NE JAMAIS** utiliser des informations futures pour entraîner le modèle
-
-### 2. Overfitting sur le public leaderboard
-❌ Le public leaderboard n'est **pas significatif** (mock data)
-✅ Se concentrer sur une validation walk-forward robuste
-
-### 3. Ignorer la contrainte de volatilité
-❌ Un modèle très performant mais trop volatil sera pénalisé
-✅ Toujours vérifier que `Volatilité_stratégie ≤ 1.2 × Volatilité_marché`
-
-### 4. Ne pas gérer les valeurs manquantes
-❌ Les premières années ont beaucoup de missing values
-✅ Soit les ignorer, soit les imputer intelligemment
-
-### 5. Stratégies trop complexes
-❌ Modèles avec des centaines de features peuvent mal généraliser
-✅ Commencer simple, ajouter de la complexité progressivement
-
----
 
 ## 📝 CHECKLIST AVANT SOUMISSION
 
