@@ -33,12 +33,6 @@ Prédire les **rendements excédentaires du S&P 500** (`market_forward_excess_re
 
 Remettre en question l'**Hypothèse des Marchés Efficaces (EMH)** qui stipule qu'il est impossible de battre le marché de manière systématique.
 
-### Récompenses
-
-- **Prize Pool** : $100,000
-- **Timeline** :
-  - Phase d'entraînement : 16 sept - 15 déc 2025
-  - Phase de forecasting : 15 déc 2025 - 16 juin 2026
 
 ### Particularité unique
 
