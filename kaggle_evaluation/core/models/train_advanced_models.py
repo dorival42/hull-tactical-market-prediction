@@ -277,79 +277,56 @@ for name, model in final_models.items():
     print(f"      R²:   {metrics['r2']:.4f}")
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 5. CALCUL DU SHARPE RATIO
+# 5. PREDICTIONS SUR VALIDATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
 print("\n" + "="*80)
-print("5. CALCUL DU SHARPE RATIO")
+print("5. PREDICTIONS SUR VALIDATION")
 print("="*80)
 
-def convert_to_allocation(predictions, method='threshold'):
-    """Convertir prédictions en allocations."""
-    if method == 'threshold':
-        allocations = np.ones_like(predictions)
-        allocations[predictions > 0.003] = 1.8
-        allocations[(predictions > 0) & (predictions <= 0.003)] = 1.3
-        allocations[(predictions < 0) & (predictions >= -0.003)] = 0.7
-        allocations[predictions < -0.003] = 0.2
-    return np.clip(allocations, 0.0, 2.0)
-
-# Calcul pour chaque modèle
-sharpe_results = []
+prediction_results = []
 
 for name, model in final_models.items():
     y_pred = model.predict(X_val_final)
-    allocations = convert_to_allocation(y_pred)
-    
-    sharpe_metrics = ModelMetrics.calculate_sharpe_ratio(
-        allocations,
-        val_final['forward_returns'].values,
-        val_final['risk_free_rate'].values
-    )
-    
-    sharpe_metrics['model'] = name
-    sharpe_results.append(sharpe_metrics)
-    
+    metrics = ModelMetrics.calculate_regression_metrics(y_val_final.values, y_pred)
+    metrics['model'] = name
+    prediction_results.append(metrics)
+
     print(f"\n   {name.upper()}:")
-    print(f"      Sharpe Ratio:      {sharpe_metrics['sharpe_ratio']:+.4f}")
-    print(f"      Annual Return:     {sharpe_metrics['annualized_return']*100:+.2f}%")
-    print(f"      Annual Volatility: {sharpe_metrics['annualized_volatility']*100:.2f}%")
-    print(f"      Volatility Ratio:  {sharpe_metrics['volatility_ratio']:.2f}x")
-    print(f"      Constraint OK:     {'NON ❌' if sharpe_metrics['exceeds_constraint'] else 'OUI ✓'}")
+    print(f"      RMSE: {metrics['rmse']:.6f}")
+    print(f"      MAE:  {metrics['mae']:.6f}")
+    print(f"      R2:   {metrics['r2']:.4f}")
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 6. SAUVEGARDE DES MODÈLES ET RÉSULTATS
+# 6. SAUVEGARDE DES MODELES ET RESULTATS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 print("\n" + "="*80)
 print("6. SAUVEGARDE")
 print("="*80)
 
-# Sauvegarder les modèles
+# Sauvegarder les modeles
 for name, model in final_models.items():
     filepath = f'/home/claude/models/saved/{name}_final.pkl'
     model.save(filepath)
 
-# Sauvegarder les features sélectionnées
+# Sauvegarder les features selectionnees
 import json
 with open('/home/claude/models/saved/selected_features.json', 'w') as f:
     json.dump(selected_features, f, indent=2)
-print("✓ Features sélectionnées sauvegardées")
+print("Features selectionnees sauvegardees")
 
-# Sauvegarder les résultats
-results_df = pd.DataFrame(sharpe_results)
-results_df.to_csv('/home/claude/models/saved/sharpe_results.csv', index=False)
-print("✓ Résultats Sharpe sauvegardés")
-
-summary_df.to_csv('/home/claude/models/saved/validation_summary.csv', index=False)
-print("✓ Résumé de validation sauvegardé")
+# Sauvegarder les resultats
+results_df = pd.DataFrame(prediction_results)
+results_df.to_csv('/home/claude/models/saved/prediction_results.csv', index=False)
+print("Resultats predictions sauvegardes")
 
 print("\n" + "="*80)
-print("✓ ENTRAÎNEMENT AVANCÉ TERMINÉ")
+print("ENTRAINEMENT AVANCE TERMINE")
 print("="*80)
 
-# Meilleur modèle
-best_model = max(sharpe_results, key=lambda x: x['sharpe_ratio'])
-print(f"\n🏆 MEILLEUR MODÈLE: {best_model['model'].upper()}")
-print(f"   Sharpe Ratio: {best_model['sharpe_ratio']:+.4f}")
-print(f"   Rendement:    {best_model['annualized_return']*100:+.2f}%")
+# Meilleur modele
+best_model = min(prediction_results, key=lambda x: x['rmse'])
+print(f"\nMEILLEUR MODELE: {best_model['model'].upper()}")
+print(f"   RMSE: {best_model['rmse']:.6f}")
+print(f"   R2:   {best_model['r2']:.4f}")

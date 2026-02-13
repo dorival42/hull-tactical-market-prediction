@@ -1,0 +1,43 @@
+# Hull Tactical Market Prediction - Training Dockerfile
+FROM python:3.10-slim
+
+LABEL maintainer="Hull Tactical Team"
+LABEL description="Hull Tactical Training Pipeline"
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt .
+COPY requirements-dev.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Kaggle CLI
+RUN pip install --no-cache-dir kaggle
+
+# Copy source code
+COPY src/ src/
+COPY configs/ configs/
+COPY scripts/ scripts/
+
+# Create directories
+RUN mkdir -p artifacts/data artifacts/models artifacts/logs
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+# Create Kaggle config directory
+RUN mkdir -p /root/.kaggle
+
+# Default command - run training script
+CMD ["python", "scripts/train.py"]

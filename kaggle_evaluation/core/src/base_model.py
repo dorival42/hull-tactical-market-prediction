@@ -288,43 +288,4 @@ class ModelMetrics:
             'r2': r2,
             'mape': mape
         }
-    
-    @staticmethod
-    def calculate_sharpe_ratio(allocations: np.ndarray,
-                              target_returns: np.ndarray) -> Dict[str, float]:
-        """
-        Calcul Sharpe  sur market_forward_excess_returns.
-        
-        Args:
-            allocations: array [0, 2]
-            target_returns: market_forward_excess_returns (déjà excess)
-        
-        Returns:
-            dict avec métriques Sharpe
-        """
-        # Portfolio excess returns = allocation × target
-        # target est déjà excess (forward_returns - risk_free_rate)
-        portfolio_excess = allocations * target_returns
-        
-        # Annualiser (252 jours de trading)
-        annual_return = portfolio_excess.mean() * 252
-        annual_volatility = portfolio_excess.std() * np.sqrt(252)
-        
-        # Sharpe Ratio
-        sharpe_ratio = (annual_return / annual_volatility 
-                        if annual_volatility > 0 else 0.0)
-        
-        # Contrainte Kaggle: Volatility Ratio ≤ 1.5
-        market_volatility = target_returns.std() * np.sqrt(252)
-        volatility_ratio = (annual_volatility / market_volatility 
-                            if market_volatility > 0 else 0.0)
-        exceeds_constraint = volatility_ratio > 1.5
-        
-        return {
-            'sharpe_ratio': sharpe_ratio,
-            'annualized_return': annual_return,
-            'annualized_volatility': annual_volatility,
-            'volatility_ratio': volatility_ratio,
-            'exceeds_constraint': exceeds_constraint
-        }
 

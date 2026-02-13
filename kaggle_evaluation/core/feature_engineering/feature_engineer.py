@@ -14,6 +14,7 @@ import pandas as pd
 import numpy as np
 from typing import List, Dict, Optional, Tuple
 from sklearn.preprocessing import StandardScaler
+import lightgbm as lgb
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer
@@ -21,25 +22,19 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
+"""
+═══════════════════════════════════════════════════════════════════════════════
+FEATURE ENGINEERING - HULL TACTICAL
+═══════════════════════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════════════════════
+"""
+
+
 class FeatureEngineer:
-    """
-    Classe pour créer et gérer les features.
-    
-    Fonctionnalités:
-    - Lag features
-    - Rolling statistics
-    - Technical indicators
-    - Interaction features
-    - Feature selection
-    """
-    
+  
     def __init__(self, verbose: bool = True):
-        """
-        Initialisation.
-        
-        Args:
-            verbose: Afficher les messages
-        """
+
         self.feature_names = None
         self.numeric_features = []
         self.verbose = verbose
@@ -48,12 +43,12 @@ class FeatureEngineer:
         self._fit_stats = {}  # Pour stocker les stats d'imputation
         
     def _log(self, message):
-        """Logger si verbose=True"""
+       
         if self.verbose:
             print(message)
         
     def fit(self, df):
-        """Apprendre les colonnes et types"""
+    
         
         # Identifier les features numériques (exclure target et metadata)
         exclude_cols = ['date_id', 'forward_returns', 'risk_free_rate', 
@@ -68,6 +63,25 @@ class FeatureEngineer:
         self._calculate_imputation_stats(df)
         
         return self
+    
+
+    def hull_transform(self, df):
+        
+        self._log("TRANSFORMING DATA")
+       
+        self._log(f"Input shape: {df.shape}")
+        
+        df = df.copy()
+        
+        # 1. Créer les lagged features si nécessaire (TRAIN)
+        df = self._create_lagged_features(df)
+        
+        # 2. Feature engineering
+        df = self._create_features(df)
+        
+        # 3. Gérer les valeurs manquantes (CRITIQUE)
+        df = self._handle_missing_values(df)
+        return df
     
     def _calculate_imputation_stats(self, df):
         """Calculer les stats nécessaires pour l'imputation"""
@@ -93,64 +107,14 @@ class FeatureEngineer:
                 pct = self._fit_stats[col]['nan_pct']
                 self._log(f"   {col}: {pct:.1f}%")
     
-    def hull_transform(self, df):
-        """Transformer les données"""
-        
-        self._log("TRANSFORMING DATA")
-       
-        self._log(f"Input shape: {df.shape}")
-        
-        df = df.copy()
-        
-        # 1. Créer les lagged features si nécessaire (TRAIN)
-        df = self._create_lagged_features(df)
-        
-        # 2. Feature engineering
-        df = self._create_features(df)
-        
-        # 3. Gérer les valeurs manquantes (CRITIQUE)
-        df = self._handle_missing_values(df)
-        """
-        # 4. Sélectionner les features finales
-        if self.feature_names is None:
-            # Première fois : mémoriser les features
-            feature_cols = [col for col in df.columns if col in self.numeric_features or col.startswith('feat_') or col.startswith('lagged_')]
-            self.feature_names = feature_cols
-            self._log(f"\n Features finales créées: {len(self.feature_names)}")
-        
-        # S'assurer qu'on a toutes les features attendues
-        for col in self.feature_names:
-            if col not in df.columns:
-                df[col] = np.nan
-        
-        X = df[self.feature_names].copy()
-        
-        # 5. Gérer les inf et -inf
-        inf_count = np.isinf(X.values).sum()
-        if inf_count > 0:
-            self._log(f"\n  {inf_count} valeurs Inf détectées, remplacement par NaN")
-            X = X.replace([np.inf, -np.inf], np.nan)
-        
-        # 6. Vérification finale
-        nan_count = X.isna().sum().sum()
-        if nan_count > 0:
-            self._log(f"\n {nan_count} NaN  restants dans les features finales après transformation")
-        
-        self._log(f"\n Output shape: {X.shape}")
-        self._log("="*80)
-        """
-        return df
-    
     def _create_lagged_features(self, df):
-        """
-        Créer les lagged features pour le TRAIN
-        (Dans TEST, elles existent déjà)
-        """
-        # Si c'est le train set (pas de lagged_*), on les crée
+ 
+   
+ 
         if 'lagged_market_forward_excess_returns' not in df.columns:
             self._log("\n Création des lagged features pour le train set...")
             
-            # ATTENTION : On ne peut créer les lags que si on a les colonnes sources
+     
             if 'market_forward_excess_returns' in df.columns:
                 df['lagged_market_forward_excess_returns'] = df['market_forward_excess_returns'].shift(1)
                 self._log("    lagged_market_forward_excess_returns créé")
@@ -168,7 +132,7 @@ class FeatureEngineer:
         return df
     
     def _create_features(self, df):
-        """Créer des features supplémentaires"""
+       
         self._log("\n Feature engineering...")
         
         initial_cols = len(df.columns)
@@ -217,7 +181,7 @@ class FeatureEngineer:
             # Z-score de la target
             df['feat_target_zscore'] = (df['lagged_market_forward_excess_returns'] - rolling_mean) / (df['feat_target_rolling_std_20'] + 1e-8)
             
-            self._log(f"       lagged target features créées")
+            
         
         if 'lagged_forward_returns' in df.columns:
             df['feat_lagged_returns'] = df['lagged_forward_returns']
@@ -260,7 +224,6 @@ class FeatureEngineer:
                     new_col_kurt = f'feat_{col}_rolling_kurtosis_{window}d'
                     df[new_col_kurt] = df[col].rolling(window, min_periods=1).kurt()
                     
-                self._log(f"        momentum features for {col} créées")
 
         
         # ========================================
@@ -268,16 +231,15 @@ class FeatureEngineer:
         # ========================================
         
            
-        self._log(f"\n    Volatility of Volatility")
+ 
         for window in [20, 60]:
             vol_col = f'lagged_forward_returns_rolling_std_{window}d'
             if vol_col in df.columns:
-                new_col = f'vol_of_vol_{window}'
+                new_col = f'feat_vol_of_vol_{window}'
                 df[new_col] = df[vol_col].rolling(20).std()
         
         v_cols = [col for col in df.columns if col.startswith('V') and len(col) > 1 and col[1:].isdigit()]
         if v_cols:
-            self._log(f"    Creating volatility features from {len(v_cols)} V* columns...")
             
             # Statistiques de base
             df['feat_v_mean'] = df[v_cols].mean(axis=1)
@@ -293,22 +255,20 @@ class FeatureEngineer:
             df['feat_extreme_vol'] = (df['feat_high_vol'] | df['feat_low_vol']).astype(int)
             
             # Volatility percentile (position relative)
-            df['feat_v_percentile'] = df['feat_v_mean'].rolling(252, min_periods=20).rank(pct=True)
+            df['feat_v_percentile'] = df['feat_v_mean'].rolling(252, min_periods=1).rank(pct=True)
             
             # Changement de volatilité
-            df['feat_v_change'] = df['feat_v_mean'] - df['feat_v_mean'].shift(5)
-            df['feat_v_pct_change'] = df['feat_v_mean'].pct_change(5)
+            df['feat_v_change'] = df['feat_v_mean'] - df['feat_v_mean'].shift(5).mean()
+            df['feat_v_pct_change'] = df['feat_v_mean'].pct_change(5).mean()
             
-            self._log(f"        volatility features créées")
-        
+           
         # ========================================
         # 3. MOMENTUM FEATURES (M*)
         # ========================================
         
         m_cols = [col for col in df.columns if col.startswith('M') and len(col) > 1 and col[1:].isdigit()]
         if m_cols:
-            self._log(f"    Creating momentum features from {len(m_cols)} M* columns...")
-            
+           
             # Statistiques de base
             df['feat_m_mean'] = df[m_cols].mean(axis=1)
             df['feat_m_sum'] = df[m_cols].sum(axis=1)
@@ -328,9 +288,9 @@ class FeatureEngineer:
             df['feat_momentum_consistency'] = df['feat_momentum_balance'] / (len(m_cols) + 1e-8)
             
             # Momentum change
-            df['feat_m_change'] = df['feat_m_mean'] - df['feat_m_mean'].shift(5)
+            df['feat_m_change'] = df['feat_m_mean'] - df['feat_m_mean'].shift(5).mean()
             
-            self._log(f"        momentum features créées")
+            
         
         # ========================================
         # 4. SENTIMENT FEATURES (S*)
@@ -338,7 +298,7 @@ class FeatureEngineer:
         
         s_cols = [col for col in df.columns if col.startswith('S') and len(col) > 1 and col[1:].isdigit()]
         if s_cols:
-            self._log(f"    Creating sentiment features from {len(s_cols)} S* columns...")
+            
             
             # Statistiques de base
             df['feat_s_mean'] = df[s_cols].mean(axis=1)
@@ -351,10 +311,10 @@ class FeatureEngineer:
             df['feat_extreme_sentiment'] = (df['feat_s_mean'].abs() > df['feat_s_mean'].abs().quantile(0.9)).astype(int)
             
             # Sentiment change
-            df['feat_s_change'] = df['feat_s_mean'] - df['feat_s_mean'].shift(5)
-            df['feat_s_pct_change'] = df['feat_s_mean'].pct_change(5)
+            df['feat_s_change'] = df['feat_s_mean'] - df['feat_s_mean'].shift(5).mean()
+            df['feat_s_pct_change'] = df['feat_s_mean'].pct_change(5).mean()
             
-            self._log(f"        sentiment features créées")
+           
         
         # ========================================
         # 5. PRICE/VALUATION FEATURES (P*)
@@ -362,7 +322,7 @@ class FeatureEngineer:
         
         p_cols = [col for col in df.columns if col.startswith('P') and len(col) > 1 and col[1:].isdigit()]
         if p_cols:
-            self._log(f"    Creating price features from {len(p_cols)} P* columns...")
+           
             
             df['feat_p_mean'] = df[p_cols].mean(axis=1)
             df['feat_p_std'] = df[p_cols].std(axis=1)
@@ -370,9 +330,9 @@ class FeatureEngineer:
             df['feat_p_min'] = df[p_cols].min(axis=1)
             
             # Price change
-            df['feat_p_change'] = df['feat_p_mean'] - df['feat_p_mean'].shift(5)
+            df['feat_p_change'] = df['feat_p_mean'] - df['feat_p_mean'].shift(5).mean()
             
-            self._log(f"        price features créées")
+            
         
         # ========================================
         # 6. INTEREST RATE FEATURES (I*)
@@ -380,7 +340,7 @@ class FeatureEngineer:
         
         i_cols = [col for col in df.columns if col.startswith('I') and len(col) > 1 and col[1:].isdigit()]
         if i_cols:
-            self._log(f"    Creating interest rate features from {len(i_cols)} I* columns...")
+            
             
             df['feat_i_mean'] = df[i_cols].mean(axis=1)
             df['feat_i_spread'] = df[i_cols].max(axis=1) - df[i_cols].min(axis=1)
@@ -391,9 +351,9 @@ class FeatureEngineer:
                 df['feat_i_slope'] = df[i_cols[-1]] - df[i_cols[0]]  # Long - Short
             
             # Interest rate change
-            df['feat_i_change'] = df['feat_i_mean'] - df['feat_i_mean'].shift(20)
+            df['feat_i_change'] = df['feat_i_mean'] - df['feat_i_mean'].shift(20).mean()
             
-            self._log(f"       5 interest rate features créées")
+            
         
         # ========================================
         # 7. ECONOMIC FEATURES (E*)
@@ -401,25 +361,25 @@ class FeatureEngineer:
         
         e_cols = [col for col in df.columns if col.startswith('E') and len(col) > 1 and col[1:].isdigit()]
         if e_cols:
-            self._log(f"    Creating economic features from {len(e_cols)} E* columns...")
+            
             
             df['feat_e_mean'] = df[e_cols].mean(axis=1)
             df['feat_e_std'] = df[e_cols].std(axis=1)
             
             # Economic change
-            df['feat_e_change'] = df['feat_e_mean'] - df['feat_e_mean'].shift(20)
+            df['feat_e_change'] = df['feat_e_mean'] - df['feat_e_mean'].shift(20).mean()
             
-            self._log(f"       economic features créées")
+           
         
         # ========================================
         # 8. INTERACTIONS ENTRE GROUPES
         # ========================================
 
-        self._log(f"\n    RSI (Relative Strength Index)")
+    
         def calculate_rsi(data, window=14):
             delta = data.diff()
-            gain = (delta.where(delta > 0, 0)).rolling(window=window).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(window=window).mean()
+            gain = (delta.where(delta > 0, 0)).rolling(window=window, min_periods=1).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=window, min_periods=1).mean()
             rs = gain / loss
             rsi = 100 - (100 / (1 + rs))
             return rsi
@@ -430,7 +390,7 @@ class FeatureEngineer:
                     new_col = f'feat_{col}_rsi_{window}'
                     df[new_col] = calculate_rsi(df[col], window)
 
-        self._log(f"\n   MACD (Moving Average Convergence Divergence)")
+     
         for col in ['lagged_forward_returns', target_col]:
             if col in df.columns:
                 # MACD = EMA(12) - EMA(26)
@@ -450,7 +410,7 @@ class FeatureEngineer:
                 hist_col = f'feat_{col}_macd_hist'
                 df[hist_col] = macd - signal
 
-        self._log(f"\n    Interaction Features")
+      
         
         # Volatilité × Momentum
         if 'feat_v_mean' in df.columns and 'feat_m_mean' in df.columns:
@@ -470,7 +430,7 @@ class FeatureEngineer:
         if 'feat_p_mean' in df.columns and 'feat_v_mean' in df.columns:
             df['feat_price_vol_ratio'] = df['feat_p_mean'] / (df['feat_v_mean'] + 1e-8)
         
-        self._log(f"       interaction features créées")
+        
         
        
         # ═══════════════════════════════════════════════════════════════════════════════
@@ -478,7 +438,7 @@ class FeatureEngineer:
         # ═══════════════════════════════════════════════════════════════════════════════
 
        
-        self._log(f" TIME-BASED FEATURES")
+       
         print("="*80)
 
         time_features = []
@@ -504,116 +464,97 @@ class FeatureEngineer:
     #=======================================================================
     # FUNCTIONS MISSING VALUE HANDLING
     #=======================================================================
-
-    
-    
-
-    def _handle_missing_values(self, df: pd.DataFrame) -> pd.DataFrame:
+    def select_features(self, df_train: pd.DataFrame, 
+                                    target_col: str,
+                                    method: str = "lgb_importance", 
+                                    n_features: int = 150) -> List[str]:
         """
-        Gère les valeurs manquantes de manière intelligente
-        - Supprime les colonnes trop incomplètes
-        - Remplace les infinities
-        - Imputation via modèle ML (RandomForest)
-        """
-        self._log("\n Gestion des valeurs manquantes...")
-
-        # Étape 1 : Diagnostic initial
-        initial_nans = df.isna().sum().sum()
-        self._log(f"   NaN initiaux avant suppression >30% : {initial_nans}")
-
-        # Étape 2 : Supprimer les colonnes trop vides
-        cols_to_drop = [col for col in df.columns if df[col].isna().mean() > 0.3]
-        if cols_to_drop:
-            self._log(f"   Suppression de {len(cols_to_drop)} colonnes (>30% NaN) : {cols_to_drop[:5]}...")
-            df = df.drop(columns=cols_to_drop)
-        
-        afterdrop30_nans = df.isna().sum().sum()
-        self._log(f"   NaN après suppression : {afterdrop30_nans}")
-
-        # Étape 3 : Nettoyage des valeurs infinies
-        df = df.replace([np.inf, -np.inf], np.nan)
-
-        df_median = df.fillna(df.median()) # Médiane
-
-        # Étape 7 : Log final
-        final_nans = df_median.isna().sum().sum()
-        self._log(f"   NaN finaux: {final_nans} (réduit de {initial_nans})")
-        self._log(f"   {len(df_median.columns)} colonnes restantes {df_median.columns.to_list()}")
-        return df_median
-
-
-
-    
-    def select_features(self, df: pd.DataFrame, 
-                       target_col: str,
-                       method: str = 'correlation',
-                       n_features: int = None) -> List[str]:
-        """
-        Sélectionner les meilleures features.
+        Sélectionne features en utilisant SEULEMENT les données d'entraînement.
         
         Args:
-            df: DataFrame
-            target_col: Colonne target
-            method: Méthode ('correlation', 'mutual_info', 'variance')
+            df_train: DataFrame d'entraînement (subset temporel)
+            target_col: Nom de la colonne target
+            method: "lgb_importance" ou "correlation"
             n_features: Nombre de features à sélectionner
-            
+        
         Returns:
-            Liste de noms de features
+            Liste des features sélectionnées
         """
+        # ✅ CORRECTION: Exclure TOUTES les colonnes interdites
+        exclude_cols = [
+            "date_id", 
+            target_col,
+            "forward_returns",           # ❌ Future data
+            "risk_free_rate",            # ❌ Future data
+            "market_forward_excess_returns",  # ❌ Target
+            "is_scored"
+        ]
+        
+        candidate_cols = [col for col in df_train.columns if col not in exclude_cols]
+        
+        X = df_train[candidate_cols].fillna(0)
+        y = df_train[target_col].values
 
-        n_rows = df.shape[0]
-        if n_features is None:
-            n_features = min(150, n_rows)
-        
-        if self.verbose:
-            print(f"\n   Sélection des {n_features} meilleures features (méthode: {method})...")
-        #self._log(df.columns.tolist())
-        # Exclure les colonnes non-features
-        important_cols = [col for col in df.columns if col.startswith('feat_')]
-        exclude_cols = ['date_id', target_col, 'forward_returns', 'risk_free_rate']
-        feature_cols = [col for col in df.columns if col not in exclude_cols and col in important_cols]
-        
-        self._log(f"   Nombre total de features candidates: {len(feature_cols)}")
-        if method == 'correlation':
-            # Corrélation avec la target
-            correlations = []
-            for col in feature_cols:
-                corr_data = df[[col, target_col]].dropna()
-                if len(corr_data) > 100:
-                    corr = abs(corr_data.corr().iloc[0, 1])
-                    if not np.isnan(corr):
-                        correlations.append((col, corr))
+        if method == "lgb_importance":
+            model = lgb.LGBMRegressor(
+                random_state=42, 
+                n_estimators=300, 
+                learning_rate=0.05,
+                verbosity=-1
+            )
+            model.fit(X, y)
             
-            # Trier par corrélation absolue
-            correlations.sort(key=lambda x: x[1], reverse=True)
-            selected = [feat for feat, _ in correlations[:n_features]]
-        
-        elif method == 'variance':
-            # Variance des features
-            variances = df[feature_cols].var().sort_values(ascending=False)
-            selected = variances.head(n_features).index.tolist()
-        
-        elif method == 'mutual_info':
-            # Mutual information
-            from sklearn.feature_selection import mutual_info_regression
+            imp = pd.DataFrame({
+                "feature": candidate_cols, 
+                "importance": model.feature_importances_
+            })
+            imp = imp.sort_values("importance", ascending=False)
+            selected = imp.head(n_features)["feature"].tolist()
             
-            X = df[feature_cols].fillna(0)
-            y = df[target_col].fillna(0)
+        elif method == "correlation":
+            corrs = []
+            for col in candidate_cols:
+                s = df_train[[col, target_col]].dropna()
+                if len(s) > 50:
+                    corr = abs(s[col].corr(s[target_col]))
+                    corrs.append((col, corr))
             
-            mi_scores = mutual_info_regression(X, y, random_state=42)
-            mi_df = pd.DataFrame({'feature': feature_cols, 'mi_score': mi_scores})
-            mi_df = mi_df.sort_values('mi_score', ascending=False)
-            selected = mi_df.head(n_features)['feature'].tolist()
-        
+            corrs.sort(key=lambda x: x[1], reverse=True)
+            selected = [c for c, _ in corrs[:n_features]]
+            
         else:
-            raise ValueError(f"Méthode inconnue: {method}")
+            raise ValueError(f"Unknown method: {method}")
         
-        self.selected_features = selected
-        
-        if self.verbose:
-            print(f"   ✓ {len(selected)} features sélectionnées")
+        print(f"✓ Selected {len(selected)} features using {method}")
         
         return selected
+
+
+
+  
+    
+
+
+
+    def _handle_missing_values(self, df, nan_threshold=0.30):
+        # 1. Drop colonnes trop vides
+        nan_ratio = df.isna().mean()
+        cols_to_drop = nan_ratio[nan_ratio > nan_threshold].index
+        df = df.drop(columns=cols_to_drop)
+        
+        # 2. Colonnes numériques uniquement
+        num_cols = df.select_dtypes(include=['float64', 'float32', 'int64']).columns
+        
+        # 3. Remplacer inf / -inf
+        df[num_cols] = df[num_cols].replace([np.inf, -np.inf], np.nan)
+        
+        # 4. Imputation par médiane
+        df[num_cols] = df[num_cols].fillna(df[num_cols].median())
+        
+        return df
+   
+
+
     
     def normalize_features(self, df_train: pd.DataFrame, 
                           df_test: pd.DataFrame,

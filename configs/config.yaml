@@ -1,0 +1,49 @@
+project:
+  name: hull-tactical
+  competition: hull-tactical-index-tracking
+  version: "1.0.0"
+
+data:
+  kaggle_dataset: hull-tactical/hull-tactical-index-tracking
+  train_file: train.csv
+  test_file: test.csv
+  target_column: market_forward_excess_returns
+  cache_dir: artifacts/data
+
+mlflow:
+  tracking_uri: ${oc.env:MLFLOW_TRACKING_URI, https://dagshub.com/username/hull-tactical.mlflow}
+  experiment_name: hull-tactical-experiments
+  registry_uri: ${oc.env:MLFLOW_TRACKING_URI, https://dagshub.com/username/hull-tactical.mlflow}
+
+preprocessing:
+  nan_threshold: 0.30
+  use_catboost_imputation: true
+  catboost_imputation:
+    iterations: 100
+    learning_rate: 0.1
+    depth: 4
+    verbose: 0
+  feature_selection:
+    method: combined
+    n_features: 150
+    importance_weight: 0.5
+    correlation_weight: 0.25
+    mutual_info_weight: 0.25
+
+training:
+  test_size: 0.2
+  n_splits: 5
+  random_state: 42
+  cutoff_date_id: null  # Use all data - no date cutoff
+  warmup_period: 100
+  early_stopping_rounds: 50
+
+validation:
+  method: walk_forward
+  n_splits: 5
+  test_size_ratio: 0.167
+
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: artifacts/logs/training.log

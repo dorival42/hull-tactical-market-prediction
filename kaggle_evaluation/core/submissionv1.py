@@ -87,100 +87,72 @@ STATE = GlobalState()
 
 def strategy_momentum(test_batch, window=5):
     """
-    Stratégie Momentum Simple.
-    
-    Si momentum > 0 → allocation 1.5
-    Si momentum <= 0 → allocation 0.5
+    Strategie Momentum Simple - retourne la prediction du momentum.
     """
     # Convertir en pandas si c'est un polars DataFrame
     if hasattr(test_batch, 'to_pandas'):
         test_batch = test_batch.to_pandas()
-    
-    # Récupérer les rendements laggés
+
+    # Recuperer les rendements lagges
     if 'lagged_market_forward_excess_returns' in test_batch.columns:
         current_return = test_batch['lagged_market_forward_excess_returns'].iloc[0]
         STATE.update_history(current_return)
-    
-    # Calculer le momentum
+
+    # Calculer le momentum comme prediction
     if len(STATE.history) >= window:
-        momentum = np.mean(STATE.history[-window:])
-        allocation = 1.5 if momentum > 0 else 0.5
+        prediction = np.mean(STATE.history[-window:])
     else:
-        # Pas assez d'historique → allocation neutre
-        allocation = 1.0
-    
-    return allocation
+        prediction = 0.0
+
+    return prediction
 
 def strategy_lightgbm(test_batch):
     """
-    Stratégie basée sur LightGBM.
+    Prediction basee sur LightGBM.
     """
     if STATE.model is None:
-        return 1.0
-    
+        return 0.0
+
     # Convertir en pandas si c'est un polars DataFrame
     if hasattr(test_batch, 'to_pandas'):
         test_batch = test_batch.to_pandas()
-    
-    # Préparer les features
-    exclude_cols = ['date_id', 'is_scored', 
-                    'lagged_forward_returns', 'lagged_risk_free_rate', 
+
+    # Preparer les features
+    exclude_cols = ['date_id', 'is_scored',
+                    'lagged_forward_returns', 'lagged_risk_free_rate',
                     'lagged_market_forward_excess_returns']
     feature_cols = [col for col in test_batch.columns if col not in exclude_cols]
-    
+
     X = test_batch[feature_cols]
-    
-    # Prédire
+
+    # Predire
     prediction = STATE.model.predict(X)[0]
-    
-    # Convertir en allocation (méthode proportional)
-    # Basé sur l'analyse baseline
-    # Normaliser autour de 1.0
-    if prediction > 0.003:
-        allocation = 1.8
-    elif prediction > 0:
-        allocation = 1.3
-    elif prediction > -0.003:
-        allocation = 0.7
-    else:
-        allocation = 0.2
-    
-    return np.clip(allocation, 0.0, 2.0)
+
+    return float(prediction)
 
 def strategy_xgboost(test_batch):
     """
-    Stratégie basée sur XGBoost.
+    Prediction basee sur XGBoost.
     """
     if STATE.model is None:
-        return 1.0
-    
+        return 0.0
+
     # Convertir en pandas si c'est un polars DataFrame
     if hasattr(test_batch, 'to_pandas'):
         test_batch = test_batch.to_pandas()
-    
-    # Préparer les features
-    exclude_cols = ['date_id', 'is_scored', 
-                    'lagged_forward_returns', 'lagged_risk_free_rate', 
+
+    # Preparer les features
+    exclude_cols = ['date_id', 'is_scored',
+                    'lagged_forward_returns', 'lagged_risk_free_rate',
                     'lagged_market_forward_excess_returns']
     feature_cols = [col for col in test_batch.columns if col not in exclude_cols]
-    
-    X = test_batch[feature_cols]
-    
-    # Prédire
-    prediction = STATE.model.predict(X)[0]
-    
-    # Convertir en allocation (méthode proportional)
-    min_pred = -0.02  # Approximation basée sur l'entraînement
-    max_pred = 0.02
-    allocation = 0.2 + 1.6 * (prediction - min_pred) / (max_pred - min_pred)
-    
-    return np.clip(allocation, 0.0, 2.0)
 
-def strategy_buy_hold(test_batch):
-    """
-    Stratégie Buy & Hold simple.
-    """
-    return 1.0
+    X = test_batch[feature_cols]
+
+    # Predire
+    prediction = STATE.model.predict(X)[0]
+
+    return float(prediction)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # FONCTION PREDICT (APPELÉE PAR L'API)
@@ -188,37 +160,30 @@ def strategy_buy_hold(test_batch):
 
 def predict(test_batch):
     """
-    Fonction principale appelée par l'API Kaggle pour chaque batch.
-    
+    Fonction principale appelee par l'API Kaggle pour chaque batch.
+
     Args:
         test_batch: DataFrame contenant les features pour un date_id
-    
+
     Returns:
-        float: Allocation entre 0.0 et 2.0
+        float: Prediction de market_forward_excess_returns
     """
     try:
-        # Sélectionner la stratégie
+        # Selectionner la strategie
         if STRATEGY == 'momentum':
-            allocation = strategy_momentum(test_batch, window=MOMENTUM_WINDOW)
+            prediction = strategy_momentum(test_batch, window=MOMENTUM_WINDOW)
         elif STRATEGY == 'lightgbm':
-            allocation = strategy_lightgbm(test_batch)
+            prediction = strategy_lightgbm(test_batch)
         elif STRATEGY == 'xgboost':
-            allocation = strategy_xgboost(test_batch)
-        elif STRATEGY == 'buy_hold':
-            allocation = strategy_buy_hold(test_batch)
+            prediction = strategy_xgboost(test_batch)
         else:
-            # Fallback: allocation neutre
-            allocation = 1.0
-        
-        # S'assurer que l'allocation est valide
-        allocation = float(np.clip(allocation, 0.0, 2.0))
-        
-        return allocation
-    
+            prediction = 0.0
+
+        return float(prediction)
+
     except Exception as e:
         print(f"Erreur dans predict(): {e}")
-        # En cas d'erreur, retourner allocation neutre
-        return 1.0
+        return 0.0
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # POINT D'ENTRÉE
@@ -255,23 +220,15 @@ if __name__ == '__main__':
                 print(f"\n   Aperçu:")
                 print(submission.head(10))
                 
-                # Statistiques sur les allocations
+                # Statistiques sur les predictions
                 if 'prediction' in submission.columns:
-                    allocations = submission['prediction']
-                    print(f"\n📈 Statistiques des allocations:")
-                    print(f"   Mean:   {allocations.mean():.4f}")
-                    print(f"   Std:    {allocations.std():.4f}")
-                    print(f"   Min:    {allocations.min():.4f}")
-                    print(f"   Max:    {allocations.max():.4f}")
-                    print(f"   Median: {allocations.median():.4f}")
-                    
-                    # Distribution
-                    print(f"\n   Distribution:")
-                    bins = [0, 0.5, 1.0, 1.5, 2.0]
-                    for i in range(len(bins)-1):
-                        count = ((allocations >= bins[i]) & (allocations < bins[i+1])).sum()
-                        pct = count / len(allocations) * 100
-                        print(f"      [{bins[i]:.1f} - {bins[i+1]:.1f}): {count:3d} ({pct:5.1f}%)")
+                    preds = submission['prediction']
+                    print(f"\nStatistiques des predictions:")
+                    print(f"   Mean:   {preds.mean():.6f}")
+                    print(f"   Std:    {preds.std():.6f}")
+                    print(f"   Min:    {preds.min():.6f}")
+                    print(f"   Max:    {preds.max():.6f}")
+                    print(f"   Median: {preds.median():.6f}")
             else:
                 print("\n⚠️  Fichier submission.parquet non trouvé!")
         

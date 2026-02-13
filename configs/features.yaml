@@ -1,0 +1,50 @@
+feature_engineering:
+  lag_windows: [1, 2, 3, 5]
+  rolling_windows: [5, 10, 20, 60]
+
+  target_features:
+    enabled: true
+    lags: [1, 2, 3]
+    rolling_stats: [mean, std, max, min, skew, kurtosis]
+
+  technical_indicators:
+    rsi_windows: [7, 14, 21]
+    macd:
+      fast_period: 12
+      slow_period: 26
+      signal_period: 9
+
+  category_prefixes:
+    volatility: V
+    momentum: M
+    sentiment: S
+    price: P
+    interest_rate: I
+    economic: E
+    dummy: D
+
+feature_selection:
+  method: lgb_importance
+  n_features: 150
+  min_importance: 0.0
+  correlation_threshold: 0.95
+
+missing_values:
+  nan_threshold: 0.30
+  imputation_strategy: median
+
+normalization:
+  enabled: false
+  method: standard
+
+exclude_columns:
+  - date_id
+  - forward_returns
+  - risk_free_rate
+  - market_forward_excess_returns
+  - is_scored
+
+lagged_columns:
+  - lagged_market_forward_excess_returns
+  - lagged_forward_returns
+  - lagged_risk_free_rate

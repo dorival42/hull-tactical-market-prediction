@@ -62,9 +62,9 @@ print(f"\n Données train chargées: {train.shape[0]:,} lignes × {train.shape[1
 
 
 # Utiliser données récentes (moins de valeurs manquantes)
-#CUTOFF_DATE = 7000
-#train_clean = train[train['date_id'] >= CUTOFF_DATE].copy()
-#print(f"\n✓ Après cutoff (date_id >= {CUTOFF_DATE}): {train_clean.shape[0]:,} lignes")
+#CUTOFF_DATE = 6000
+#train = train[train['date_id'] >= CUTOFF_DATE].copy()
+#print(f"\n✓ Après cutoff (date_id >= {CUTOFF_DATE}): {train.shape[0]:,} lignes")
 
 # Feature Engineering
 fe = FeatureEngineer(verbose=True)
@@ -92,18 +92,17 @@ target_col = 'market_forward_excess_returns'
 exclude_cols = ['date_id', 'forward_returns', 'risk_free_rate', target_col]
 
 # Méthode 1: Corrélation
-selected_corr = fe.select_features(train_enhanced, target_col, 
-                                   method='correlation', n_features=90)
+#selected_corr = fe.select_features(train_enhanced, target_col, 
+ #                                  method='correlation', n_features=None)
 
  #Méthode 2: Mutual Information
-selected_mi = fe.select_features(train_enhanced, target_col,
-                                method='mutual_info', n_features=None)
+selected_lgb = fe.select_features(train_enhanced, target_col, 'lgb_importance', 150)
 
 # Combiner les deux méthodes
-selected_features = list(set(selected_corr[:90]) | set(selected_mi[:90]))
-print(f"\n✓ {len(selected_features)} features sélectionnées au total")
+#selected_features = list(set(selected_corr[:150]) | set(selected_mi[:150]))
+#print(f"\n✓ {len(selected_features)} features sélectionnées au total")
 
-
+selected_features = selected_lgb
 
 #selected_features = selected_corr
 print(f"\n✓ {len(selected_features)} features sélectionnées au total")
@@ -114,7 +113,7 @@ important_cols = [col for col in train_enhanced.columns
                   if not col.startswith('feat_') and col not in exclude_cols]
 
 
-train_enhanced = train_enhanced[['date_id'] + important_cols + selected_features + [target_col]].copy()
+train_enhanced = train_enhanced[['date_id'] + selected_features + [target_col]].copy()
 
 
 # les colonnes train doit etre les memes que test autre que target
@@ -137,7 +136,7 @@ train_enhanced = train_enhanced[['date_id'] + important_cols + selected_features
 
 
 
-print(f"\nLes colonnes utilisées pour l'entraînement sont: {train_enhanced.columns.tolist()}")
+#print(f"\nLes colonnes utilisées pour l'entraînement sont: {train_enhanced.columns.tolist()}")
 
 #print(f"\nLes colonnes utilisées pour le test sont: {test_enhanced.columns.tolist()}")
 
@@ -198,19 +197,6 @@ def walk_forward_validation(df: pd.DataFrame,
         train_fold.set_index('date_id', inplace=True)
         test_fold.set_index('date_id', inplace=True)
 
-        def convert_to_allocation(predictions, method='threshold'):
-            """Convertir prédictions en allocations."""
-            if method == 'threshold':
-                allocations = np.ones_like(predictions)
-                allocations[predictions > 0.003] = 1.8
-                allocations[(predictions > 0) & (predictions <= 0.003)] = 1.3
-                allocations[(predictions < 0) & (predictions >= -0.003)] = 0.7
-                allocations[predictions < -0.003] = 0.2
-            return np.clip(allocations, 0.0, 2.0)
-        
-       
-        
-
         # Préparer les données
         X_train = train_fold.drop(columns=target_col).fillna(0)
         y_train = train_fold[target_col]
@@ -230,17 +216,6 @@ def walk_forward_validation(df: pd.DataFrame,
         results['lightgbm']['metrics'].append(metrics_lgb)
         print(f"      LightGBM - RMSE: {metrics_lgb['rmse']:.6f}, R²: {metrics_lgb['r2']:.4f}")
 
-        # Après chaque fold:
-        y_pred = lgb_model.predict(X_test)
-        allocations = convert_to_allocation(y_pred)
-
-        # Calculer Sharpe
-        sharpe = ModelMetrics.calculate_sharpe_ratio(
-            allocations,
-            test_fold['market_forward_excess_returns']
-        )
-        print(f"Sharpe fold {fold}: {sharpe}")
-        
         # XGBoost
         xgb_model = XGBoostModel()
         xgb_model.fit(X_train, y_train)
@@ -253,19 +228,6 @@ def walk_forward_validation(df: pd.DataFrame,
         results['xgboost']['metrics'].append(metrics_xgb)
         print(f"      XGBoost  - RMSE: {metrics_xgb['rmse']:.6f}, R²: {metrics_xgb['r2']:.4f}")
 
-        # Après chaque fold:
-        y_pred = xgb_model.predict(X_test)
-        allocations = convert_to_allocation(y_pred)
-
-        # Calculer Sharpe
-        sharpe = ModelMetrics.calculate_sharpe_ratio(
-            allocations,
-            test_fold['market_forward_excess_returns']
-        )
-        print(f"Sharpe fold {fold}: {sharpe}")
-
-
-        
         # Random Forest
         rf_model = RandomForestModel()
         rf_model.fit(X_train, y_train)
@@ -278,19 +240,6 @@ def walk_forward_validation(df: pd.DataFrame,
         results['random_forest']['metrics'].append(metrics_rf)
         print(f"      RF       - RMSE: {metrics_rf['rmse']:.6f}, R²: {metrics_rf['r2']:.4f}")
 
-        # Après chaque fold:
-        y_pred = rf_model.predict(X_test)
-        allocations = convert_to_allocation(y_pred)
-
-        # Calculer Sharpe
-        sharpe = ModelMetrics.calculate_sharpe_ratio(
-            allocations,
-            test_fold['market_forward_excess_returns']
-        )
-        print(f"Sharpe fold {fold}: {sharpe}")
-
-        
-    
     return results
 
 # Exécuter la validation
@@ -370,7 +319,7 @@ y_val_final = val_final[target_col]
 print(f"\n   Train final: {len(train_final):,} lignes")
 print(f"   Val final:   {len(val_final):,} lignes")
 
-# Entraîner les 3 meilleurs modèles
+# Entraîner les 4 meilleurs modèles
 final_models = {}
 
 print("\n   Entraînement LightGBM...")
@@ -381,7 +330,7 @@ final_models['lightgbm'] = lgb_final
 print("\n   Entraînement CatGBM...")
 cat_final = CatBoostModel(name='Catboost_Final')
 cat_final.fit(X_train_final, y_train_final, X_val_final, y_val_final)
-final_models['cacatboost'] = cat_final
+final_models['catboost'] = cat_final
 
 print("   Entraînement XGBoost...")
 xgb_final = XGBoostModel(name='XGBoost_Final')
@@ -406,44 +355,25 @@ for name, model in final_models.items():
     print(f"      R²:   {metrics['r2']:.4f}")
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# 5. CALCUL DU SHARPE RATIO
+# 5. PREDICTIONS SUR VALIDATION
 # ═══════════════════════════════════════════════════════════════════════════════
 
 print("\n" + "="*80)
-print("5. CALCUL DU SHARPE RATIO")
+print("5. PREDICTIONS SUR VALIDATION")
 print("="*80)
 
-def convert_to_allocation(predictions, method='threshold'):
-    """Convertir prédictions en allocations."""
-    if method == 'threshold':
-        allocations = np.ones_like(predictions)
-        allocations[predictions > 0.003] = 1.8
-        allocations[(predictions > 0) & (predictions <= 0.003)] = 1.3
-        allocations[(predictions < 0) & (predictions >= -0.003)] = 0.7
-        allocations[predictions < -0.003] = 0.2
-    return np.clip(allocations, 0.0, 2.0)
-
-# Calcul pour chaque modèle
-sharpe_results = []
+prediction_results = []
 
 for name, model in final_models.items():
     y_pred = model.predict(X_val_final)
-    allocations = convert_to_allocation(y_pred)
-    
-    sharpe_metrics = ModelMetrics.calculate_sharpe_ratio(
-        allocations,
-        val_final['market_forward_excess_returns'].values
-    )
-    
-    sharpe_metrics['model'] = name
-    sharpe_results.append(sharpe_metrics)
-    
+    metrics = ModelMetrics.calculate_regression_metrics(y_val_final.values, y_pred)
+    metrics['model'] = name
+    prediction_results.append(metrics)
+
     print(f"\n   {name.upper()}:")
-    print(f"      Sharpe Ratio:      {sharpe_metrics['sharpe_ratio']:+.4f}")
-    print(f"      Annual Return:     {sharpe_metrics['annualized_return']*100:+.2f}%")
-    print(f"      Annual Volatility: {sharpe_metrics['annualized_volatility']*100:.2f}%")
-    print(f"      Volatility Ratio:  {sharpe_metrics['volatility_ratio']:.2f}x")
-    print(f"      Constraint OK:     {'NON ' if sharpe_metrics['exceeds_constraint'] else 'OUI ✓'}")
+    print(f"      RMSE: {metrics['rmse']:.6f}")
+    print(f"      MAE:  {metrics['mae']:.6f}")
+    print(f"      R2:   {metrics['r2']:.4f}")
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 6. SAUVEGARDE DES MODÈLES ET RÉSULTATS
@@ -462,23 +392,20 @@ for name, model in final_models.items():
 import json
 with open('./kaggle_evaluation/core/models/selected_features.json', 'w') as f:
     json.dump(selected_features, f, indent=2)
-print("✓ Features sélectionnées sauvegardées")
+print("Features selectionnees sauvegardees")
 
 # Sauvegarder les résultats
-results_df = pd.DataFrame(sharpe_results)
-results_df.to_csv('./kaggle_evaluation/core/files_results/sharpe_results.csv', index=False)
-print("✓ Résultats Sharpe sauvegardés")
-
-#summary_df.to_csv('./kaggle_evaluation/core/files_results/validation_summary.csv', index=False)
-#print("✓ Résumé de validation sauvegardé")
+results_df = pd.DataFrame(prediction_results)
+results_df.to_csv('./kaggle_evaluation/core/files_results/prediction_results.csv', index=False)
+print("Resultats predictions sauvegardes")
 
 print("\n" + "="*80)
-print("✓ ENTRAÎNEMENT AVANCÉ TERMINÉ")
+print("ENTRAINEMENT AVANCE TERMINE")
 print("="*80)
 
 # Meilleur modèle
-best_model = max(sharpe_results, key=lambda x: x['sharpe_ratio'])
-print(f"\n🏆 MEILLEUR MODÈLE: {best_model['model'].upper()}")
-print(f"   Sharpe Ratio: {best_model['sharpe_ratio']:+.4f}")
-print(f"   Rendement:    {best_model['annualized_return']*100:+.2f}%")
+best_model = min(prediction_results, key=lambda x: x['rmse'])
+print(f"\nMEILLEUR MODELE: {best_model['model'].upper()}")
+print(f"   RMSE: {best_model['rmse']:.6f}")
+print(f"   R2:   {best_model['r2']:.4f}")
 

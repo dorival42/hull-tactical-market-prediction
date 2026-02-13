@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # Main Streamlit application
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: hull-tactical-app
+    ports:
+      - "8501:8501"
+    environment:
+      - KAGGLE_USERNAME=${KAGGLE_USERNAME}
+      - KAGGLE_KEY=${KAGGLE_KEY}
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
+      - MLFLOW_TRACKING_USERNAME=${DAGSHUB_USERNAME}
+      - MLFLOW_TRACKING_PASSWORD=${DAGSHUB_TOKEN}
+    volumes:
+      - ../artifacts:/app/artifacts
+      - ../configs:/app/configs:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Training service (on-demand)
+  training:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.train
+    container_name: hull-tactical-training
+    environment:
+      - KAGGLE_USERNAME=${KAGGLE_USERNAME}
+      - KAGGLE_KEY=${KAGGLE_KEY}
+      - MLFLOW_TRACKING_URI=${MLFLOW_TRACKING_URI}
+      - MLFLOW_TRACKING_USERNAME=${DAGSHUB_USERNAME}
+      - MLFLOW_TRACKING_PASSWORD=${DAGSHUB_TOKEN}
+    volumes:
+      - ../artifacts:/app/artifacts
+      - ../configs:/app/configs:ro
+    profiles:
+      - training
+
+  # MLflow UI (optional, for local development)
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.9.0
+    container_name: hull-tactical-mlflow
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow-data:/mlflow
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:///mlflow/mlflow.db
+      --default-artifact-root /mlflow/artifacts
+      --host 0.0.0.0
+      --port 5000
+    profiles:
+      - mlflow
+
+volumes:
+  mlflow-data:
+
+networks:
+  default:
+    name: hull-tactical-network
