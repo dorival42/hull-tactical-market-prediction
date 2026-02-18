@@ -67,9 +67,9 @@ hull-evaluate = "scripts.evaluate:main"
 hull-submit = "scripts.submit:main"
 
 [project.urls]
-Homepage = "https://github.com/username/hull-tactical-market-prediction"
-Documentation = "https://github.com/username/hull-tactical-market-prediction#readme"
-Repository = "https://github.com/username/hull-tactical-market-prediction"
+Homepage = "https://github.com/dorival42/hull-tactical-market-prediction"
+Documentation = "https://github.com/dorival42/hull-tactical-market-prediction#readme"
+Repository = "https://github.com/dorival42/hull-tactical-market-prediction"
 
 [tool.setuptools.packages.find]
 where = ["."]

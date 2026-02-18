@@ -11,9 +11,9 @@ data:
   cache_dir: artifacts/data
 
 mlflow:
-  tracking_uri: ${oc.env:MLFLOW_TRACKING_URI, https://dagshub.com/username/hull-tactical.mlflow}
+  tracking_uri: ${oc.env:MLFLOW_TRACKING_URI, https://dagshub.com/dorival42/hull-tactical-market-prediction.mlflow/}
   experiment_name: hull-tactical-experiments
-  registry_uri: ${oc.env:MLFLOW_TRACKING_URI, https://dagshub.com/username/hull-tactical.mlflow}
+  registry_uri: ${oc.env:MLFLOW_TRACKING_URI, https://dagshub.com/dorival42/hull-tactical-market-prediction.mlflow}
 
 preprocessing:
   nan_threshold: 0.30
