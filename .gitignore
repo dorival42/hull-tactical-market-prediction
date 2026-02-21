@@ -141,8 +141,12 @@ cython_debug/
 .DS_Store
 Thumbs.db
 
-# Project specific
+# Project specific — exclude heavy files, keep lightweight JSON metadata
 artifacts/
+!artifacts/metrics.json
+!artifacts/feature_importance.json
+!artifacts/selected_features.json
+!artifacts/preprocessing_info.json
 *.pkl
 *.joblib
 catboost_info/

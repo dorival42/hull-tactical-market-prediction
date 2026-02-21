@@ -50,9 +50,26 @@ COLORS = {
     "RandomForest": "#10b981", "Ensemble": "#ef4444",
 }
 
+# ── Safe formatting helper ─────────────────────────────────────────────────────
+def _f(val, fmt=".6f", fallback="—"):
+    """Format val with fmt, return fallback if val is None."""
+    try:
+        return format(val, fmt) if val is not None else fallback
+    except (TypeError, ValueError):
+        return fallback
+
 metrics_df = pd.DataFrame([
     {"Model": m, **v} for m, v in REAL_RESULTS.items()
 ])
+# Drop rows where rmse is None (models not yet trained)
+metrics_df = metrics_df.dropna(subset=["rmse"])
+MODELS = metrics_df["Model"].tolist() if not metrics_df.empty else list(REAL_RESULTS.keys())
+
+# ── Guard: show warning if no model has been trained yet ──────────────────────
+if metrics_df.empty:
+    st.title("🔬 Model Comparison")
+    st.warning("⚙️ No trained models found yet. Run `python scripts/train.py --model all` first.")
+    st.stop()
 
 ROOT = Path(__file__).parent.parent.parent
 DATA_PATH = ROOT / "artifacts" / "data" / "train.csv"
@@ -72,16 +89,17 @@ best_acc_val    = metrics_df["dir_acc"].max()
 
 c1, c2, c3, c4, c5 = st.columns(5)
 with c1:
-    st.metric("Best RMSE", f"{best_rmse_val:.6f}", delta=f"{best_rmse_model}", delta_color="off")
+    st.metric("Best RMSE", _f(best_rmse_val), delta=best_rmse_model, delta_color="off")
 with c2:
-    st.metric("Best R²", f"{best_r2_val:.4f}", delta=f"{best_r2_model}", delta_color="off")
+    st.metric("Best R²", _f(best_r2_val, ".4f"), delta=best_r2_model, delta_color="off")
 with c3:
-    st.metric("Best Dir. Acc.", f"{best_acc_val:.2f}%", delta=f"{best_acc_model}", delta_color="off")
+    st.metric("Best Dir. Acc.", _f(best_acc_val, ".2f") + ("%" if best_acc_val is not None else ""),
+              delta=best_acc_model, delta_color="off")
 with c4:
     rmse_spread = (metrics_df["rmse"].max() - metrics_df["rmse"].min()) * 1000
     st.metric("RMSE Spread", f"{rmse_spread:.2f}×10⁻³", delta="Models are close", delta_color="off")
 with c5:
-    st.metric("Models Trained", "5", delta="LGB · XGB · CAT · RF · ENS", delta_color="off")
+    st.metric("Models Trained", str(len(metrics_df)), delta="LGB · XGB · CAT · RF · ENS", delta_color="off")
 
 st.markdown("---")
 
@@ -96,12 +114,13 @@ with col_r:
         x=MODELS,
         y=[REAL_RESULTS[m]["rmse"] for m in MODELS],
         marker=dict(color=bar_colors, line=dict(width=1, color="#1e3a5f")),
-        text=[f"{REAL_RESULTS[m]['rmse']:.5f}" for m in MODELS],
+        text=[_f(REAL_RESULTS[m]['rmse'], ".5f") for m in MODELS],
         textposition="outside", textfont=dict(color="#e2e8f0", size=11),
     ))
     # Highlight best
-    fig_rmse.add_hline(y=best_rmse_val, line_dash="dot", line_color="#10b981",
-                       annotation_text=f"Best: {best_rmse_val:.6f}", annotation_font_color="#10b981")
+    if best_rmse_val is not None:
+        fig_rmse.add_hline(y=best_rmse_val, line_dash="dot", line_color="#10b981",
+                           annotation_text=f"Best: {_f(best_rmse_val)}", annotation_font_color="#10b981")
     fig_rmse.update_layout(**PLOTLY_DARK, height=320, showlegend=False,
                            title="RMSE — Lower is Better",
                            xaxis_title="Model", yaxis_title="RMSE",
@@ -114,7 +133,7 @@ with col_d:
         x=MODELS,
         y=[REAL_RESULTS[m]["dir_acc"] for m in MODELS],
         marker=dict(color=bar_colors, line=dict(width=1, color="#1e3a5f")),
-        text=[f"{REAL_RESULTS[m]['dir_acc']:.2f}%" for m in MODELS],
+        text=[_f(REAL_RESULTS[m]['dir_acc'], ".2f") + "%" for m in MODELS],
         textposition="outside", textfont=dict(color="#e2e8f0", size=11),
     ))
     fig_acc.add_hline(y=50, line_dash="dot", line_color="#ef4444",
@@ -133,7 +152,7 @@ with col_mae:
         x=MODELS,
         y=[REAL_RESULTS[m]["mae"] for m in MODELS],
         marker=dict(color=bar_colors, line=dict(width=1, color="#1e3a5f")),
-        text=[f"{REAL_RESULTS[m]['mae']:.5f}" for m in MODELS],
+        text=[_f(REAL_RESULTS[m]['mae'], ".5f") for m in MODELS],
         textposition="outside", textfont=dict(color="#e2e8f0", size=11),
     ))
     fig_mae.update_layout(**PLOTLY_DARK, height=280, showlegend=False,
@@ -143,13 +162,13 @@ with col_mae:
     st.plotly_chart(fig_mae, use_container_width=True)
 
 with col_r2:
-    r2_colors = ["#10b981" if REAL_RESULTS[m]["r2"] >= 0 else "#ef4444" for m in MODELS]
+    r2_colors = ["#10b981" if (REAL_RESULTS[m].get("r2") or 0) >= 0 else "#ef4444" for m in MODELS]
     fig_r2 = go.Figure()
     fig_r2.add_trace(go.Bar(
         x=MODELS,
         y=[REAL_RESULTS[m]["r2"] for m in MODELS],
         marker=dict(color=r2_colors, line=dict(width=1, color="#1e3a5f")),
-        text=[f"{REAL_RESULTS[m]['r2']:+.4f}" for m in MODELS],
+        text=[_f(REAL_RESULTS[m]['r2'], "+.4f") for m in MODELS],
         textposition="outside", textfont=dict(color="#e2e8f0", size=11),
     ))
     fig_r2.add_hline(y=0, line_dash="dash", line_color="#64748b")
@@ -254,16 +273,16 @@ rows = ""
 for m in MODELS:
     r = REAL_RESULTS[m]
     best_mark = " <span class='winner-badge'>★ Best</span>" if m == best_rmse_model else ""
-    r2_color = "#10b981" if r["r2"] >= 0 else "#ef4444"
-    acc_color = "#10b981" if r["dir_acc"] > 50 else "#ef4444"
+    r2_color  = "#10b981" if (r.get("r2") or 0) >= 0 else "#ef4444"
+    acc_color = "#10b981" if (r.get("dir_acc") or 0) > 50 else "#ef4444"
     rows += f"""
     <tr>
         <td style="color:{COLORS[m]};font-weight:700;">{m}{best_mark}</td>
-        <td>{r['rmse']:.6f}</td>
-        <td>{r['mae']:.6f}</td>
-        <td style="color:{r2_color};">{r['r2']:+.4f}</td>
-        <td style="color:{acc_color};">{r['dir_acc']:.2f}%</td>
-        <td>{r['train_time']}s</td>
+        <td>{_f(r.get('rmse'))}</td>
+        <td>{_f(r.get('mae'))}</td>
+        <td style="color:{r2_color};">{_f(r.get('r2'), '+.4f')}</td>
+        <td style="color:{acc_color};">{_f(r.get('dir_acc'), '.2f')}%</td>
+        <td>{r.get('train_time') or '—'}s</td>
     </tr>"""
 
 st.markdown(f"""
@@ -285,7 +304,7 @@ with col_rec1:
     <div class='model-card'>
         <div style='font-size:.8rem;color:#94a3b8;'>🏆 BEST OVERALL</div>
         <div style='font-size:1.6rem;font-weight:800;color:#00d4ff;margin:.4rem 0;'>{best_rmse_model}</div>
-        <div style='color:#e2e8f0;'>RMSE: <b>{best_rmse_val:.6f}</b> &nbsp;|&nbsp; R²: <b>{REAL_RESULTS[best_rmse_model]['r2']:+.4f}</b> &nbsp;|&nbsp; Dir. Acc.: <b>{REAL_RESULTS[best_rmse_model]['dir_acc']:.2f}%</b></div>
+        <div style='color:#e2e8f0;'>RMSE: <b>{_f(best_rmse_val)}</b> &nbsp;|&nbsp; R²: <b>{_f(REAL_RESULTS[best_rmse_model].get('r2'), '+.4f')}</b> &nbsp;|&nbsp; Dir. Acc.: <b>{_f(REAL_RESULTS[best_rmse_model].get('dir_acc'), '.2f')}%</b></div>
         <div style='color:#94a3b8;font-size:.82rem;margin-top:.5rem;'>Lowest RMSE on held-out validation set. Recommended for production inference.</div>
     </div>
     """, unsafe_allow_html=True)

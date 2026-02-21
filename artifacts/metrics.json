@@ -1,0 +1,42 @@
+{
+  "LightGBM": {
+    "rmse": 0.011111,
+    "mae": 0.007952,
+    "r2": 0.0042,
+    "dir_acc": 50.45,
+    "train_time": 38.0,
+    "timestamp": "2026-02-21T23:43:00"
+  },
+  "XGBoost": {
+    "rmse": 0.011226,
+    "mae": 0.0081,
+    "r2": -0.0166,
+    "dir_acc": 49.27,
+    "train_time": 22.0,
+    "timestamp": "2026-02-21T23:43:00"
+  },
+  "CatBoost": {
+    "rmse": 0.011125,
+    "mae": 0.007962,
+    "r2": 0.0016,
+    "dir_acc": 48.44,
+    "train_time": 55.0,
+    "timestamp": "2026-02-21T23:43:00"
+  },
+  "RandomForest": {
+    "rmse": 0.011183,
+    "mae": 0.007991,
+    "r2": -0.0088,
+    "dir_acc": 47.93,
+    "train_time": 14.0,
+    "timestamp": "2026-02-21T23:43:00"
+  },
+  "Ensemble": {
+    "rmse": 0.011123,
+    "mae": 0.00797,
+    "r2": 0.002,
+    "dir_acc": 49.83,
+    "train_time": 132.0,
+    "timestamp": "2026-02-21T23:45:00"
+  }
+}

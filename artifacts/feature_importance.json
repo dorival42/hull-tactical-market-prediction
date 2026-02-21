@@ -1,0 +1,254 @@
+{
+  "LightGBM": [
+    {
+      "feature": "feat_lagged_forward_returns_rsi_7",
+      "importance": 18,
+      "rank": 1
+    },
+    {
+      "feature": "feat_lagged_forward_returns_macd",
+      "importance": 16,
+      "rank": 2
+    },
+    {
+      "feature": "M4",
+      "importance": 15,
+      "rank": 3
+    },
+    {
+      "feature": "S2",
+      "importance": 15,
+      "rank": 4
+    },
+    {
+      "feature": "P6",
+      "importance": 15,
+      "rank": 5
+    },
+    {
+      "feature": "V5",
+      "importance": 14,
+      "rank": 6
+    },
+    {
+      "feature": "feat_lagged_forward_returns_rolling_mean_10d",
+      "importance": 12,
+      "rank": 7
+    },
+    {
+      "feature": "P3",
+      "importance": 12,
+      "rank": 8
+    },
+    {
+      "feature": "feat_lagged_forward_returns_rolling_kurtosis_5d",
+      "importance": 12,
+      "rank": 9
+    },
+    {
+      "feature": "E19",
+      "importance": 11,
+      "rank": 10
+    },
+    {
+      "feature": "feat_lagged_forward_returns_rolling_mean_60d",
+      "importance": 10,
+      "rank": 11
+    },
+    {
+      "feature": "feat_v_change",
+      "importance": 10,
+      "rank": 12
+    },
+    {
+      "feature": "E11",
+      "importance": 10,
+      "rank": 13
+    },
+    {
+      "feature": "P10",
+      "importance": 9,
+      "rank": 14
+    },
+    {
+      "feature": "feat_lagged_forward_returns_macd_signal",
+      "importance": 9,
+      "rank": 15
+    },
+    {
+      "feature": "V13",
+      "importance": 9,
+      "rank": 16
+    },
+    {
+      "feature": "feat_momentum_strength",
+      "importance": 9,
+      "rank": 17
+    },
+    {
+      "feature": "feat_lagged_forward_returns_rolling_kurtosis_20d",
+      "importance": 8,
+      "rank": 18
+    },
+    {
+      "feature": "feat_m_std",
+      "importance": 8,
+      "rank": 19
+    },
+    {
+      "feature": "feat_vol_momentum_ratio",
+      "importance": 8,
+      "rank": 20
+    },
+    {
+      "feature": "feat_v_min",
+      "importance": 8,
+      "rank": 21
+    },
+    {
+      "feature": "feat_lagged_forward_returns_rolling_max_20d",
+      "importance": 8,
+      "rank": 22
+    },
+    {
+      "feature": "I8",
+      "importance": 8,
+      "rank": 23
+    },
+    {
+      "feature": "feat_e_std",
+      "importance": 8,
+      "rank": 24
+    },
+    {
+      "feature": "V7",
+      "importance": 8,
+      "rank": 25
+    },
+    {
+      "feature": "feat_lagged_forward_returns_rolling_max_5d",
+      "importance": 7,
+      "rank": 26
+    },
+    {
+      "feature": "P5",
+      "importance": 7,
+      "rank": 27
+    },
+    {
+      "feature": "P12",
+      "importance": 7,
+      "rank": 28
+    },
+    {
+      "feature": "S5",
+      "importance": 7,
+      "rank": 29
+    },
+    {
+      "feature": "feat_m_min",
+      "importance": 7,
+      "rank": 30
+    },
+    {
+      "feature": "feat_target_rolling_mean_20",
+      "importance": 7,
+      "rank": 31
+    },
+    {
+      "feature": "E17",
+      "importance": 7,
+      "rank": 32
+    },
+    {
+      "feature": "feat_s_change",
+      "importance": 6,
+      "rank": 33
+    },
+    {
+      "feature": "M15",
+      "importance": 6,
+      "rank": 34
+    },
+    {
+      "feature": "M3",
+      "importance": 6,
+      "rank": 35
+    },
+    {
+      "feature": "feat_lagged_forward_returns_macd_hist",
+      "importance": 6,
+      "rank": 36
+    },
+    {
+      "feature": "feat_e_max",
+      "importance": 6,
+      "rank": 37
+    },
+    {
+      "feature": "feat_target_rolling_std_5",
+      "importance": 6,
+      "rank": 38
+    },
+    {
+      "feature": "I3",
+      "importance": 6,
+      "rank": 39
+    },
+    {
+      "feature": "feat_e_mean",
+      "importance": 5,
+      "rank": 40
+    },
+    {
+      "feature": "V2",
+      "importance": 5,
+      "rank": 41
+    },
+    {
+      "feature": "P13",
+      "importance": 5,
+      "rank": 42
+    },
+    {
+      "feature": "feat_lagged_target_2",
+      "importance": 5,
+      "rank": 43
+    },
+    {
+      "feature": "feat_lagged_forward_returns_rolling_min_10d",
+      "importance": 5,
+      "rank": 44
+    },
+    {
+      "feature": "I4",
+      "importance": 5,
+      "rank": 45
+    },
+    {
+      "feature": "P7",
+      "importance": 5,
+      "rank": 46
+    },
+    {
+      "feature": "feat_autocorr",
+      "importance": 5,
+      "rank": 47
+    },
+    {
+      "feature": "feat_price_vol_ratio",
+      "importance": 5,
+      "rank": 48
+    },
+    {
+      "feature": "I2",
+      "importance": 5,
+      "rank": 49
+    },
+    {
+      "feature": "feat_m_mean",
+      "importance": 5,
+      "rank": 50
+    }
+  ]
+}

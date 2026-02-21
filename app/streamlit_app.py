@@ -202,15 +202,20 @@ with st.sidebar:
         label_visibility="collapsed",
     )
     m = REAL_RESULTS[selected_model]
+    _rmse_str  = f"{m['rmse']:.6f}"      if m.get('rmse')    is not None else "—"
+    _r2_val    = m.get('r2')
+    _r2_str    = f"{_r2_val:+.4f}"       if _r2_val          is not None else "—"
+    _r2_color  = "#10b981" if (_r2_val or 0) > 0 else "#ef4444"
+    _acc_str   = f"{m['dir_acc']:.2f}%"  if m.get('dir_acc') is not None else "—"
     st.markdown(f"""
     <div style='background:rgba(0,212,255,0.07);border:1px solid #1e3a5f;
                 border-radius:10px;padding:0.8rem;margin-top:0.5rem;font-size:0.82rem;'>
         <div style='color:#94a3b8;'>RMSE</div>
-        <div style='color:#e2e8f0;font-weight:700;'>{m['rmse']:.6f}</div>
+        <div style='color:#e2e8f0;font-weight:700;'>{_rmse_str}</div>
         <div style='color:#94a3b8;margin-top:0.4rem;'>R²</div>
-        <div style='color:{"#10b981" if m["r2"] > 0 else "#ef4444"};font-weight:700;'>{m['r2']:+.4f}</div>
+        <div style='color:{_r2_color};font-weight:700;'>{_r2_str}</div>
         <div style='color:#94a3b8;margin-top:0.4rem;'>Directional Acc.</div>
-        <div style='color:#e2e8f0;font-weight:700;'>{m['dir_acc']:.2f}%</div>
+        <div style='color:#e2e8f0;font-weight:700;'>{_acc_str}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -399,7 +404,7 @@ with tab2:
     results_df = pd.DataFrame([
         {"Model": k, "RMSE": v["rmse"], "MAE": v["mae"], "R²": v["r2"], "Dir. Acc. %": v["dir_acc"]}
         for k, v in REAL_RESULTS.items()
-    ])
+    ]).dropna(subset=["RMSE"])  # only show trained models
 
     col1, col2 = st.columns(2)
     with col1:
@@ -463,6 +468,8 @@ with tab2:
     # Metrics table with color highlighting
     st.markdown("<div class='section-title'>Detailed Comparison Table</div>", unsafe_allow_html=True)
     def color_r2(v):
+        if v is None or (isinstance(v, float) and np.isnan(v)):
+            return ""
         return "color: #10b981; font-weight:700" if v > 0 else "color: #ef4444"
     def color_rmse(v):
         mn, mx = results_df["RMSE"].min(), results_df["RMSE"].max()

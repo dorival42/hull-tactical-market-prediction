@@ -1,0 +1,8 @@
+{
+  "nan_threshold": 0.3,
+  "catboost_imputation": false,
+  "feature_selection_method": "combined",
+  "n_features": 100,
+  "total_train_samples": 8948,
+  "date_cutoff": "None (all data used)"
+}
