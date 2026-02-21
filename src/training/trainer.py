@@ -1,6 +1,7 @@
 """Training orchestrator with MLflow integration and advanced preprocessing."""
 
 import json
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -230,6 +231,7 @@ class MLflowTrainer:
         model = ModelFactory.create(model_type)
 
         # Train with MLflow tracking
+        t0 = time.time()
         if self._mlflow:
             with self._mlflow.start_run(run_name=run_name) as run:
                 # Log preprocessing parameters
@@ -246,12 +248,14 @@ class MLflowTrainer:
 
                 # Train model
                 model.fit(X_train, y_train, X_val, y_val)
+                train_time = round(time.time() - t0, 1)
 
                 # Calculate prediction metrics
                 y_pred = model.predict(X_val)
                 pred_metrics = ModelMetrics.calculate_all_metrics(y_val.values, y_pred)
 
-                # Log metrics
+                # Log metrics (include train_time)
+                self._mlflow.log_metric("train_time_seconds", train_time)
                 self._mlflow.log_metrics(model.training_metrics)
                 self._mlflow.log_metrics(pred_metrics)
 
@@ -276,16 +280,22 @@ class MLflowTrainer:
                 logger.info(f"MLflow run completed: {run_id}")
         else:
             model.fit(X_train, y_train, X_val, y_val)
+            train_time = round(time.time() - t0, 1)
             y_pred = model.predict(X_val)
             pred_metrics = ModelMetrics.calculate_all_metrics(y_val.values, y_pred)
 
         # Combine metrics
-        all_metrics = {**model.training_metrics, **pred_metrics}
+        all_metrics = {**model.training_metrics, **pred_metrics, "train_time_seconds": train_time}
 
         logger.info(f"  RMSE: {all_metrics.get('rmse', 'N/A'):.6f}")
         logger.info(f"  MAE: {all_metrics.get('mae', 'N/A'):.6f}")
         logger.info(f"  R2: {all_metrics.get('r2', 'N/A'):.4f}")
         logger.info(f"  Directional Accuracy: {all_metrics.get('directional_accuracy', 'N/A'):.2f}%")
+        logger.info(f"  Training Time: {all_metrics.get('train_time_seconds', 'N/A')}s")
+
+        # Persist metrics and feature importance to artifacts/
+        self._save_metrics_json(model_type, all_metrics)
+        self._save_feature_importance_json(model)
 
         return model, all_metrics
 
@@ -383,6 +393,7 @@ class MLflowTrainer:
         logger.info(f"\nTraining Ensemble with {len(ensemble.models)} models...")
 
         # Train with MLflow tracking
+        t0 = time.time()
         if self._mlflow:
             with self._mlflow.start_run(run_name=run_name) as run:
                 self._mlflow.log_param("ensemble_method", ensemble.method)
@@ -393,26 +404,33 @@ class MLflowTrainer:
 
                 # Train ensemble
                 ensemble.fit(X_train, y_train, X_val, y_val)
+                train_time = round(time.time() - t0, 1)
 
                 # Calculate prediction metrics
                 y_pred = ensemble.predict(X_val)
                 pred_metrics = ModelMetrics.calculate_all_metrics(y_val.values, y_pred)
 
-                # Log metrics
+                # Log metrics (include train_time)
+                self._mlflow.log_metric("train_time_seconds", train_time)
                 self._mlflow.log_metrics(ensemble.training_metrics)
                 self._mlflow.log_metrics(pred_metrics)
 
                 logger.info(f"Ensemble MLflow run completed: {run.info.run_id}")
         else:
             ensemble.fit(X_train, y_train, X_val, y_val)
+            train_time = round(time.time() - t0, 1)
             y_pred = ensemble.predict(X_val)
             pred_metrics = ModelMetrics.calculate_all_metrics(y_val.values, y_pred)
 
-        all_metrics = {**ensemble.training_metrics, **pred_metrics}
+        all_metrics = {**ensemble.training_metrics, **pred_metrics, "train_time_seconds": train_time}
 
         logger.info(f"  RMSE: {all_metrics.get('rmse', 'N/A'):.6f}")
         logger.info(f"  R2: {all_metrics.get('r2', 'N/A'):.4f}")
         logger.info(f"  Directional Accuracy: {all_metrics.get('directional_accuracy', 'N/A'):.2f}%")
+        logger.info(f"  Training Time: {train_time}s")
+
+        # Persist metrics to artifacts/
+        self._save_metrics_json("ensemble", all_metrics)
 
         return ensemble, all_metrics
 
@@ -460,6 +478,92 @@ class MLflowTrainer:
                     self._mlflow.log_metric(f"std_{metric_name}", np.std(values))
 
         return results
+
+    def _save_metrics_json(self, model_type: str, metrics: Dict[str, float], output_dir: str = "artifacts") -> None:
+        """
+        Accumulate per-model metrics in artifacts/metrics.json.
+
+        Each call updates (or creates) the JSON file, adding/overwriting the
+        entry for *model_type*.  This means after all models are trained the
+        file contains one entry per model, and Streamlit can read them without
+        any MLflow connection.
+        """
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        metrics_path = output_path / "metrics.json"
+
+        # Load existing registry (if any)
+        registry: Dict[str, Any] = {}
+        if metrics_path.exists():
+            try:
+                with open(metrics_path) as f:
+                    registry = json.load(f)
+            except Exception:
+                registry = {}
+
+        # Normalise model_type key → Title-cased display name
+        display_names = {
+            "lightgbm": "LightGBM",
+            "xgboost": "XGBoost",
+            "catboost": "CatBoost",
+            "random_forest": "RandomForest",
+            "ensemble": "Ensemble",
+        }
+        key = display_names.get(model_type.lower(), model_type)
+
+        registry[key] = {
+            "rmse":              metrics.get("rmse", None),
+            "mae":               metrics.get("mae", None),
+            "r2":                metrics.get("r2", None),
+            "dir_acc":           metrics.get("directional_accuracy", None),
+            "train_time":        metrics.get("train_time_seconds", None),
+            "timestamp":         datetime.now().isoformat(timespec="seconds"),
+        }
+
+        with open(metrics_path, "w") as f:
+            json.dump(registry, f, indent=2)
+
+        logger.info(f"Metrics registry updated: {metrics_path} ({key})")
+
+    def _save_feature_importance_json(self, model: "BaseModel", output_dir: str = "artifacts") -> None:
+        """
+        Save feature importance scores to artifacts/feature_importance.json.
+
+        The file maps model name → list of {feature, importance, rank} dicts
+        sorted by descending importance.  Only models that expose
+        ``get_feature_importance()`` are written; ensemble is skipped.
+        """
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        fi_path = output_path / "feature_importance.json"
+
+        try:
+            importance_df = model.get_feature_importance()
+        except Exception:
+            return  # model doesn't expose importance (e.g. ensemble)
+
+        if importance_df is None or importance_df.empty:
+            return
+
+        # Load existing file (if any)
+        registry: Dict[str, Any] = {}
+        if fi_path.exists():
+            try:
+                with open(fi_path) as f:
+                    registry = json.load(f)
+            except Exception:
+                registry = {}
+
+        # Sort descending and add rank
+        importance_df = importance_df.sort_values("importance", ascending=False).reset_index(drop=True)
+        importance_df["rank"] = importance_df.index + 1
+
+        registry[model.name] = importance_df[["feature", "importance", "rank"]].to_dict(orient="records")
+
+        with open(fi_path, "w") as f:
+            json.dump(registry, f, indent=2)
+
+        logger.info(f"Feature importance saved: {fi_path} ({model.name})")
 
     def save_artifacts(
         self,
