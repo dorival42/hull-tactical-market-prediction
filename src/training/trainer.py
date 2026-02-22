@@ -4,13 +4,13 @@ import json
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
 
 from src.data.kaggle_loader import KaggleDataLoader
-from src.data.preprocessor import DataPipeline, DataPreprocessor, AdvancedFeatureSelector
+from src.data.preprocessor import DataPipeline
 from src.features.feature_engineer import FeatureEngineer
 from src.models.base import BaseModel, ModelFactory
 from src.models.ensemble import EnsembleModel
@@ -37,8 +37,8 @@ class MLflowTrainer:
 
     def __init__(
         self,
-        experiment_name: Optional[str] = None,
-        tracking_uri: Optional[str] = None,
+        experiment_name: str | None = None,
+        tracking_uri: str | None = None,
         n_features: int = 150,
         nan_threshold: float = 0.30,
         use_catboost_imputation: bool = True,
@@ -79,9 +79,9 @@ class MLflowTrainer:
         self.validator = WalkForwardValidator()
 
         # Data storage
-        self.train_df: Optional[pd.DataFrame] = None
-        self.train_df_processed: Optional[pd.DataFrame] = None
-        self.feature_cols: List[str] = []
+        self.train_df: pd.DataFrame | None = None
+        self.train_df_processed: pd.DataFrame | None = None
+        self.feature_cols: list[str] = []
 
     def _setup_mlflow(self) -> None:
         """Setup MLflow tracking."""
@@ -100,8 +100,8 @@ class MLflowTrainer:
         self,
         use_feature_engineering: bool = True,
         warmup_period: int = 100,
-        cutoff_date_id: Optional[int] = None,
-        n_features: Optional[int] = None,
+        cutoff_date_id: int | None = None,
+        n_features: int | None = None,
     ) -> pd.DataFrame:
         """
         Load data and perform complete preprocessing.
@@ -189,9 +189,9 @@ class MLflowTrainer:
     def train_model(
         self,
         model_type: str,
-        run_name: Optional[str] = None,
+        run_name: str | None = None,
         register_model: bool = False,
-    ) -> Tuple[BaseModel, Dict[str, float]]:
+    ) -> tuple[BaseModel, dict[str, float]]:
         """
         Train a single model with MLflow tracking.
 
@@ -301,11 +301,11 @@ class MLflowTrainer:
 
     def train_all_models(
         self,
-        model_types: Optional[List[str]] = None,
+        model_types: list[str] | None = None,
         register_best: bool = True,
         save_all: bool = True,
         output_dir: str = "artifacts",
-    ) -> Dict[str, Tuple[BaseModel, Dict[str, float]]]:
+    ) -> dict[str, tuple[BaseModel, dict[str, float]]]:
         """
         Train all specified model types and save them.
 
@@ -355,9 +355,9 @@ class MLflowTrainer:
 
     def train_ensemble(
         self,
-        model_types: Optional[List[str]] = None,
-        run_name: Optional[str] = None,
-    ) -> Tuple[EnsembleModel, Dict[str, float]]:
+        model_types: list[str] | None = None,
+        run_name: str | None = None,
+    ) -> tuple[EnsembleModel, dict[str, float]]:
         """
         Train an ensemble model.
 
@@ -438,7 +438,7 @@ class MLflowTrainer:
         self,
         model_type: str,
         n_splits: int = 5,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Run walk-forward validation.
 
@@ -479,7 +479,7 @@ class MLflowTrainer:
 
         return results
 
-    def _save_metrics_json(self, model_type: str, metrics: Dict[str, float], output_dir: str = "artifacts") -> None:
+    def _save_metrics_json(self, model_type: str, metrics: dict[str, float], output_dir: str = "artifacts") -> None:
         """
         Accumulate per-model metrics in artifacts/metrics.json.
 
@@ -493,7 +493,7 @@ class MLflowTrainer:
         metrics_path = output_path / "metrics.json"
 
         # Load existing registry (if any)
-        registry: Dict[str, Any] = {}
+        registry: dict[str, Any] = {}
         if metrics_path.exists():
             try:
                 with open(metrics_path) as f:
@@ -546,7 +546,7 @@ class MLflowTrainer:
             return
 
         # Load existing file (if any)
-        registry: Dict[str, Any] = {}
+        registry: dict[str, Any] = {}
         if fi_path.exists():
             try:
                 with open(fi_path) as f:

@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -24,8 +24,8 @@ class KaggleInferenceServer:
 
     def __init__(
         self,
-        model_path: Optional[str] = None,
-        features_path: Optional[str] = None,
+        model_path: str | None = None,
+        features_path: str | None = None,
         artifacts_dir: str = "artifacts",
     ):
         """
@@ -37,7 +37,7 @@ class KaggleInferenceServer:
             artifacts_dir: Directory containing model artifacts.
         """
         self.artifacts_dir = Path(artifacts_dir)
-        self.predictor: Optional[Predictor] = None
+        self.predictor: Predictor | None = None
         self.feature_engineer = FeatureEngineer(verbose=False)
         self.feature_cols: list = []
 
@@ -60,7 +60,7 @@ class KaggleInferenceServer:
 
     def _load_features(self, features_path: str) -> None:
         """Load feature list from JSON."""
-        with open(features_path, "r") as f:
+        with open(features_path) as f:
             self.feature_cols = json.load(f)
         logger.info(f"Loaded {len(self.feature_cols)} features")
 
@@ -91,7 +91,7 @@ class KaggleInferenceServer:
         # Load first available
         self._load_model(str(model_files[0]))
 
-    def predict(self, features: Dict[str, Any]) -> float:
+    def predict(self, features: dict[str, Any]) -> float:
         """
         Make prediction for a single observation.
 
@@ -163,7 +163,7 @@ class KaggleInferenceServer:
 
 # Factory function for Kaggle framework
 def create_inference_server(
-    model_path: Optional[str] = None,
+    model_path: str | None = None,
     **kwargs,
 ) -> KaggleInferenceServer:
     """

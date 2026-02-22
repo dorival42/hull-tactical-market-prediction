@@ -1,11 +1,10 @@
 """Hyperparameter optimization for Hull Tactical."""
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
-import numpy as np
 import pandas as pd
 
-from src.models.base import BaseModel, ModelFactory
+from src.models.base import ModelFactory
 from src.training.validator import WalkForwardValidator
 from src.utils.config import Config
 from src.utils.logger import get_logger
@@ -24,7 +23,7 @@ class HyperparameterOptimizer:
     def __init__(
         self,
         n_trials: int = 50,
-        timeout: Optional[int] = 3600,
+        timeout: int | None = 3600,
         direction: str = "minimize",
         metric: str = "rmse",
     ):
@@ -42,9 +41,9 @@ class HyperparameterOptimizer:
         self.direction = direction
         self.metric = metric
         self.study = None
-        self.best_params: Dict[str, Any] = {}
+        self.best_params: dict[str, Any] = {}
 
-    def _get_search_space(self, model_type: str) -> Dict[str, Any]:
+    def _get_search_space(self, model_type: str) -> dict[str, Any]:
         """Get search space for a model type."""
         spaces = {
             "lightgbm": {
@@ -84,7 +83,7 @@ class HyperparameterOptimizer:
 
         return spaces.get(model_type, {})
 
-    def _sample_params(self, trial, model_type: str) -> Dict[str, Any]:
+    def _sample_params(self, trial, model_type: str) -> dict[str, Any]:
         """Sample hyperparameters for a trial."""
         space = self._get_search_space(model_type)
         params = {}
@@ -121,10 +120,10 @@ class HyperparameterOptimizer:
         self,
         model_type: str,
         df: pd.DataFrame,
-        feature_cols: List[str],
+        feature_cols: list[str],
         target_col: str,
         n_splits: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Optimize hyperparameters for a model.
 
@@ -142,8 +141,8 @@ class HyperparameterOptimizer:
             import optuna
 
             optuna.logging.set_verbosity(optuna.logging.WARNING)
-        except ImportError:
-            raise ImportError("Optuna not installed. Install with: pip install optuna")
+        except ImportError as err:
+            raise ImportError("Optuna not installed. Install with: pip install optuna") from err
 
         validator = WalkForwardValidator()
 
@@ -212,7 +211,7 @@ class HyperparameterOptimizer:
 
         return pd.DataFrame(trials)
 
-    def get_param_importance(self) -> Dict[str, float]:
+    def get_param_importance(self) -> dict[str, float]:
         """Get parameter importance scores."""
         if self.study is None:
             raise ValueError("No study available. Run optimize() first.")

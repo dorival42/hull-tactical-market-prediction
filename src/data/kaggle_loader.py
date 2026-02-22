@@ -1,9 +1,7 @@
 """Kaggle data loader for Hull Tactical competition."""
 
-import os
 import zipfile
 from pathlib import Path
-from typing import Dict, Optional, Tuple
 
 import pandas as pd
 
@@ -23,8 +21,8 @@ class KaggleDataLoader:
 
     def __init__(
         self,
-        competition: Optional[str] = None,
-        cache_dir: Optional[str] = None,
+        competition: str | None = None,
+        cache_dir: str | None = None,
     ):
         """
         Initialize Kaggle data loader.
@@ -42,8 +40,8 @@ class KaggleDataLoader:
         )
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
-        self._train_df: Optional[pd.DataFrame] = None
-        self._test_df: Optional[pd.DataFrame] = None
+        self._train_df: pd.DataFrame | None = None
+        self._test_df: pd.DataFrame | None = None
 
     def _get_kaggle_api(self):
         """Get authenticated Kaggle API client."""
@@ -102,7 +100,7 @@ class KaggleDataLoader:
     def load_train(
         self,
         download: bool = True,
-        cutoff_date_id: Optional[int] = None,
+        cutoff_date_id: int | None = None,
     ) -> pd.DataFrame:
         """
         Load training data.
@@ -184,8 +182,8 @@ class KaggleDataLoader:
     def load_both(
         self,
         download: bool = True,
-        cutoff_date_id: Optional[int] = None,
-    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        cutoff_date_id: int | None = None,
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         Load both train and test data.
 
@@ -200,7 +198,7 @@ class KaggleDataLoader:
         test_df = self.load_test(download=download)
         return train_df, test_df
 
-    def get_data_info(self) -> Dict[str, any]:
+    def get_data_info(self) -> dict[str, any]:
         """
         Get information about the loaded data.
 

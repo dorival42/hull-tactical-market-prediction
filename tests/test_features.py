@@ -1,8 +1,6 @@
 """Tests for feature engineering."""
 
 import numpy as np
-import pandas as pd
-import pytest
 
 from src.features.feature_engineer import FeatureEngineer
 

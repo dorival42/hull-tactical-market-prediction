@@ -1,6 +1,7 @@
 """Walk-forward validation for Hull Tactical."""
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -22,17 +23,17 @@ class WalkForwardValidator:
 
     def __init__(self):
         """Initialize validator."""
-        self.results: Dict[str, Any] = {}
+        self.results: dict[str, Any] = {}
 
     def validate(
         self,
         df: pd.DataFrame,
-        feature_cols: List[str],
+        feature_cols: list[str],
         target_col: str,
         model_factory: Callable[[], BaseModel],
         n_splits: int = 5,
         date_column: str = "date_id",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Run walk-forward validation.
 
@@ -103,13 +104,13 @@ class WalkForwardValidator:
 
     def _aggregate_results(
         self,
-        fold_results: List[Dict[str, float]],
-        all_predictions: List[float],
-        all_actuals: List[float],
-    ) -> Dict[str, Any]:
+        fold_results: list[dict[str, float]],
+        all_predictions: list[float],
+        all_actuals: list[float],
+    ) -> dict[str, Any]:
         """Aggregate results from all folds."""
         # Per-metric aggregation
-        fold_metrics: Dict[str, List[float]] = {}
+        fold_metrics: dict[str, list[float]] = {}
         for result in fold_results:
             for key, value in result.items():
                 if isinstance(value, (int, float)) and not isinstance(value, bool):
@@ -160,9 +161,9 @@ class WalkForwardValidator:
     def compare_models(
         self,
         df: pd.DataFrame,
-        feature_cols: List[str],
+        feature_cols: list[str],
         target_col: str,
-        model_factories: Dict[str, Callable[[], BaseModel]],
+        model_factories: dict[str, Callable[[], BaseModel]],
         n_splits: int = 5,
     ) -> pd.DataFrame:
         """
@@ -221,7 +222,7 @@ class TimeSeriesSplit:
     def __init__(
         self,
         n_splits: int = 5,
-        test_size: Optional[int] = None,
+        test_size: int | None = None,
         gap: int = 0,
     ):
         """
@@ -237,8 +238,8 @@ class TimeSeriesSplit:
         self.gap = gap
 
     def split(
-        self, X: pd.DataFrame, y: Optional[pd.Series] = None
-    ) -> List[Tuple[np.ndarray, np.ndarray]]:
+        self, X: pd.DataFrame, y: pd.Series | None = None
+    ) -> list[tuple[np.ndarray, np.ndarray]]:
         """
         Generate indices for train/test splits.
 

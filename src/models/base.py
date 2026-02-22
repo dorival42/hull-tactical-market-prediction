@@ -3,7 +3,7 @@
 import pickle
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -25,7 +25,7 @@ class BaseModel(ABC):
     - get_feature_importance(): Get feature importance scores
     """
 
-    def __init__(self, name: str, params: Optional[Dict[str, Any]] = None):
+    def __init__(self, name: str, params: dict[str, Any] | None = None):
         """
         Initialize model.
 
@@ -37,16 +37,16 @@ class BaseModel(ABC):
         self.params = params or {}
         self.model = None
         self.is_fitted = False
-        self.feature_names: Optional[list] = None
-        self.training_metrics: Dict[str, float] = {}
+        self.feature_names: list | None = None
+        self.training_metrics: dict[str, float] = {}
 
     @abstractmethod
     def fit(
         self,
         X_train: pd.DataFrame,
         y_train: pd.Series,
-        X_val: Optional[pd.DataFrame] = None,
-        y_val: Optional[pd.Series] = None,
+        X_val: pd.DataFrame | None = None,
+        y_val: pd.Series | None = None,
     ) -> "BaseModel":
         """
         Train the model.
@@ -134,7 +134,7 @@ class BaseModel(ABC):
         logger.info(f"Model loaded: {filepath}")
         return self
 
-    def get_params(self) -> Dict[str, Any]:
+    def get_params(self) -> dict[str, Any]:
         """Get model parameters."""
         return self.params.copy()
 
@@ -143,13 +143,13 @@ class BaseModel(ABC):
         self.params.update(params)
         return self
 
-    def get_metrics(self) -> Dict[str, float]:
+    def get_metrics(self) -> dict[str, float]:
         """Get training metrics."""
         return self.training_metrics.copy()
 
     def _calculate_metrics(
         self, y_true: np.ndarray, y_pred: np.ndarray
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """Calculate regression metrics."""
         return ModelMetrics.calculate_regression_metrics(y_true, y_pred)
 
@@ -160,7 +160,7 @@ class BaseModel(ABC):
 class ModelFactory:
     """Factory class for creating models."""
 
-    _registry: Dict[str, type] = {}
+    _registry: dict[str, type] = {}
 
     @classmethod
     def register(cls, model_type: str, model_class: type) -> None:
@@ -171,8 +171,8 @@ class ModelFactory:
     def create(
         cls,
         model_type: str,
-        name: Optional[str] = None,
-        params: Optional[Dict[str, Any]] = None,
+        name: str | None = None,
+        params: dict[str, Any] | None = None,
     ) -> BaseModel:
         """
         Create a model instance.

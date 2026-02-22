@@ -1,8 +1,6 @@
 """Model registry interface for MLflow integration."""
 
-import os
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from src.models.base import BaseModel
 from src.utils.config import Config
@@ -21,7 +19,7 @@ class ModelRegistry:
     - Manage model versions and stages
     """
 
-    def __init__(self, tracking_uri: Optional[str] = None):
+    def __init__(self, tracking_uri: str | None = None):
         """
         Initialize model registry.
 
@@ -57,9 +55,9 @@ class ModelRegistry:
         self,
         model: BaseModel,
         model_name: str,
-        run_id: Optional[str] = None,
+        run_id: str | None = None,
         artifact_path: str = "model",
-        tags: Optional[Dict[str, str]] = None,
+        tags: dict[str, str] | None = None,
     ) -> str:
         """
         Register a model to MLflow registry.
@@ -130,8 +128,8 @@ class ModelRegistry:
     def load_model(
         self,
         model_name: str,
-        version: Optional[str] = None,
-        stage: Optional[str] = None,
+        version: str | None = None,
+        stage: str | None = None,
     ) -> Any:
         """
         Load a model from the registry.
@@ -181,8 +179,8 @@ class ModelRegistry:
     def get_latest_version(
         self,
         model_name: str,
-        stages: Optional[List[str]] = None,
-    ) -> Optional[str]:
+        stages: list[str] | None = None,
+    ) -> str | None:
         """
         Get the latest version of a model.
 
@@ -202,7 +200,7 @@ class ModelRegistry:
             logger.warning(f"Could not get latest version for {model_name}: {e}")
             return None
 
-    def list_models(self) -> List[Dict[str, Any]]:
+    def list_models(self) -> list[dict[str, Any]]:
         """
         List all registered models.
 
@@ -233,7 +231,7 @@ class ModelRegistry:
 
     def get_model_version_info(
         self, model_name: str, version: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Get information about a model version.
 

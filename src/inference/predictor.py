@@ -2,7 +2,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -29,10 +29,10 @@ class Predictor:
 
     def __init__(
         self,
-        model: Optional[BaseModel] = None,
-        model_path: Optional[str] = None,
-        model_name: Optional[str] = None,
-        model_version: Optional[str] = None,
+        model: BaseModel | None = None,
+        model_path: str | None = None,
+        model_name: str | None = None,
+        model_version: str | None = None,
     ):
         """
         Initialize predictor.
@@ -44,9 +44,9 @@ class Predictor:
             model_version: Version of model in registry.
         """
         self.config = Config()
-        self.model: Optional[BaseModel] = model
+        self.model: BaseModel | None = model
         self.feature_engineer = FeatureEngineer(verbose=False)
-        self.feature_cols: List[str] = []
+        self.feature_cols: list[str] = []
 
         # Load model if path or name provided
         if model_path:
@@ -101,8 +101,8 @@ class Predictor:
     def load_model_registry(
         self,
         model_name: str,
-        version: Optional[str] = None,
-        stage: Optional[str] = None,
+        version: str | None = None,
+        stage: str | None = None,
     ) -> None:
         """
         Load model from MLflow registry.
@@ -123,14 +123,14 @@ class Predictor:
         Args:
             features_path: Path to features JSON file.
         """
-        with open(features_path, "r") as f:
+        with open(features_path) as f:
             self.feature_cols = json.load(f)
         logger.info(f"Loaded {len(self.feature_cols)} features from {features_path}")
 
     def predict(
         self,
-        data: Union[pd.DataFrame, Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        data: pd.DataFrame | dict[str, Any],
+    ) -> dict[str, Any]:
         """
         Make predictions on new data.
 
@@ -171,8 +171,8 @@ class Predictor:
 
     def predict_single(
         self,
-        data: Union[pd.Series, Dict[str, Any]],
-    ) -> Dict[str, float]:
+        data: pd.Series | dict[str, Any],
+    ) -> dict[str, float]:
         """
         Make prediction for a single sample.
 
@@ -215,7 +215,7 @@ class Predictor:
 
         return pd.DataFrame({"prediction": all_predictions})
 
-    def get_model_info(self) -> Dict[str, Any]:
+    def get_model_info(self) -> dict[str, Any]:
         """
         Get information about the loaded model.
 
@@ -245,7 +245,7 @@ class InferenceServer:
     def __init__(
         self,
         model_path: str,
-        features_path: Optional[str] = None,
+        features_path: str | None = None,
     ):
         """
         Initialize inference server.
@@ -259,7 +259,7 @@ class InferenceServer:
         if features_path:
             self.predictor.load_features(features_path)
 
-    def predict(self, features: Dict[str, Any]) -> float:
+    def predict(self, features: dict[str, Any]) -> float:
         """
         Make a single prediction.
 

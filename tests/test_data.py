@@ -1,16 +1,15 @@
 """Tests for data loading and preprocessing."""
 
+
 import numpy as np
 import pandas as pd
 import pytest
-import tempfile
-from pathlib import Path
 
 from src.data.preprocessor import (
-    CatBoostImputer,
-    DataPreprocessor,
     AdvancedFeatureSelector,
+    CatBoostImputer,
     DataPipeline,
+    DataPreprocessor,
 )
 
 
@@ -21,7 +20,7 @@ class TestDataPreprocessor:
         """Test initialization."""
         preprocessor = DataPreprocessor(verbose=False)
         assert preprocessor.nan_threshold == 0.30
-        assert preprocessor.use_catboost_imputation == True
+        assert preprocessor.use_catboost_imputation
 
     def test_init_custom_params(self):
         """Test initialization with custom parameters."""
@@ -32,7 +31,7 @@ class TestDataPreprocessor:
             verbose=False,
         )
         assert preprocessor.nan_threshold == 0.25
-        assert preprocessor.use_catboost_imputation == False
+        assert not preprocessor.use_catboost_imputation
         assert preprocessor.catboost_iterations == 50
 
     def test_fit(self, sample_train_data):
@@ -40,7 +39,7 @@ class TestDataPreprocessor:
         preprocessor = DataPreprocessor(verbose=False)
         preprocessor.fit(sample_train_data)
 
-        assert preprocessor._fitted == True
+        assert preprocessor._fitted
         assert len(preprocessor._kept_columns) > 0
 
     def test_transform(self, sample_train_data):

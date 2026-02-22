@@ -1,18 +1,19 @@
 """Tests for model implementations."""
 
-import numpy as np
-import pandas as pd
-import pytest
 import tempfile
 from pathlib import Path
 
-from src.models.base import BaseModel, ModelFactory
+import numpy as np
+import pandas as pd
+import pytest
+
+from src.models.base import ModelFactory
+from src.models.ensemble import EnsembleModel
 from src.models.gradient_boosting import (
     LightGBMModel,
-    XGBoostModel,
     RandomForestModel,
+    XGBoostModel,
 )
-from src.models.ensemble import EnsembleModel
 
 
 class TestLightGBMModel:

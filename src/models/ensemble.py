@@ -1,6 +1,5 @@
 """Ensemble model implementations."""
 
-from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -25,8 +24,8 @@ class EnsembleModel(BaseModel):
     def __init__(
         self,
         name: str = "Ensemble",
-        models: Optional[List[BaseModel]] = None,
-        weights: Optional[Dict[str, float]] = None,
+        models: list[BaseModel] | None = None,
+        weights: dict[str, float] | None = None,
         method: str = "weighted_average",
     ):
         """
@@ -51,7 +50,7 @@ class EnsembleModel(BaseModel):
     @classmethod
     def from_config(
         cls,
-        model_types: Optional[List[str]] = None,
+        model_types: list[str] | None = None,
         name: str = "Ensemble",
     ) -> "EnsembleModel":
         """
@@ -102,8 +101,8 @@ class EnsembleModel(BaseModel):
         self,
         X_train: pd.DataFrame,
         y_train: pd.Series,
-        X_val: Optional[pd.DataFrame] = None,
-        y_val: Optional[pd.Series] = None,
+        X_val: pd.DataFrame | None = None,
+        y_val: pd.Series | None = None,
     ) -> "EnsembleModel":
         """
         Train all models in the ensemble.
@@ -210,12 +209,12 @@ class EnsembleModel(BaseModel):
 
         return aggregated
 
-    def get_model_weights(self) -> Dict[str, float]:
+    def get_model_weights(self) -> dict[str, float]:
         """Get normalized model weights."""
         total = sum(self.weights.values())
         return {k: v / total for k, v in self.weights.items()}
 
-    def get_individual_predictions(self, X: pd.DataFrame) -> Dict[str, np.ndarray]:
+    def get_individual_predictions(self, X: pd.DataFrame) -> dict[str, np.ndarray]:
         """
         Get predictions from each individual model.
 
@@ -279,12 +278,6 @@ class EnsembleModel(BaseModel):
         self.training_metrics = ensemble_data["training_metrics"]
 
         # Reconstruct models
-        model_classes = {
-            "LightGBMModel": "src.models.gradient_boosting.LightGBMModel",
-            "XGBoostModel": "src.models.gradient_boosting.XGBoostModel",
-            "CatBoostModel": "src.models.gradient_boosting.CatBoostModel",
-            "RandomForestModel": "src.models.gradient_boosting.RandomForestModel",
-        }
 
         self.models = []
         for model_data in ensemble_data["models"]:

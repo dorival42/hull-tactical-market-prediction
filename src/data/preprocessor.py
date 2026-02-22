@@ -8,11 +8,9 @@ Features:
 - No date cutoff (uses all available data)
 """
 
-from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import cross_val_score
 
 from src.utils.logger import get_logger
 
@@ -51,8 +49,8 @@ class CatBoostImputer:
         self.depth = depth
         self.random_state = random_state
         self.verbose = verbose
-        self.models: Dict[str, any] = {}
-        self.column_order: List[str] = []
+        self.models: dict[str, any] = {}
+        self.column_order: list[str] = []
         self._fitted = False
 
     def _get_catboost_model(self):
@@ -67,11 +65,11 @@ class CatBoostImputer:
                 verbose=self.verbose,
                 allow_writing_files=False,
             )
-        except ImportError:
+        except ImportError as err:
             raise ImportError(
                 "CatBoost is required for CatBoostImputer. "
                 "Install with: pip install catboost"
-            )
+            ) from err
 
     def fit(self, X: pd.DataFrame) -> "CatBoostImputer":
         """
@@ -219,10 +217,10 @@ class DataPreprocessor:
         self.catboost_iterations = catboost_iterations
         self.verbose = verbose
 
-        self._dropped_columns: List[str] = []
-        self._kept_columns: List[str] = []
-        self._imputer: Optional[CatBoostImputer] = None
-        self._median_values: Dict[str, float] = {}
+        self._dropped_columns: list[str] = []
+        self._kept_columns: list[str] = []
+        self._imputer: CatBoostImputer | None = None
+        self._median_values: dict[str, float] = {}
         self._fitted = False
 
     def _log(self, message: str) -> None:
@@ -263,7 +261,7 @@ class DataPreprocessor:
         self._log(f"   - Columns to keep: {len(self._kept_columns)}")
 
         if self._dropped_columns:
-            self._log(f"\n   Dropped columns:")
+            self._log("\n   Dropped columns:")
             for col in self._dropped_columns[:10]:
                 pct = nan_ratios[col] * 100
                 self._log(f"     - {col}: {pct:.1f}% missing")
@@ -361,11 +359,11 @@ class DataPreprocessor:
         """Fit and transform in one step."""
         return self.fit(df).transform(df)
 
-    def get_dropped_columns(self) -> List[str]:
+    def get_dropped_columns(self) -> list[str]:
         """Get list of dropped columns."""
         return self._dropped_columns.copy()
 
-    def get_kept_columns(self) -> List[str]:
+    def get_kept_columns(self) -> list[str]:
         """Get list of kept columns."""
         return self._kept_columns.copy()
 
@@ -432,8 +430,8 @@ class AdvancedFeatureSelector:
         self.correlation_threshold = correlation_threshold
         self.verbose = verbose
 
-        self.selected_features: List[str] = []
-        self.feature_importance: Optional[pd.DataFrame] = None
+        self.selected_features: list[str] = []
+        self.feature_importance: pd.DataFrame | None = None
         self._fitted = False
 
     def _log(self, message: str) -> None:
@@ -444,8 +442,8 @@ class AdvancedFeatureSelector:
     def _remove_highly_correlated(
         self,
         df: pd.DataFrame,
-        feature_cols: List[str],
-    ) -> List[str]:
+        feature_cols: list[str],
+    ) -> list[str]:
         """Remove highly correlated features."""
         if len(feature_cols) < 2:
             return feature_cols
@@ -479,8 +477,8 @@ class AdvancedFeatureSelector:
         """Calculate feature importance using CatBoost."""
         try:
             from catboost import CatBoostRegressor
-        except ImportError:
-            raise ImportError("CatBoost required for feature selection")
+        except ImportError as err:
+            raise ImportError("CatBoost required for feature selection") from err
 
         model = CatBoostRegressor(
             iterations=300,
@@ -541,7 +539,7 @@ class AdvancedFeatureSelector:
         self,
         df: pd.DataFrame,
         target_col: str,
-        exclude_cols: Optional[List[str]] = None,
+        exclude_cols: list[str] | None = None,
     ) -> "AdvancedFeatureSelector":
         """
         Fit feature selector.
@@ -655,7 +653,7 @@ class AdvancedFeatureSelector:
 
         # Log top features
         self._log("\n   Top 10 features:")
-        for i, row in importance.head(10).iterrows():
+        for _i, row in importance.head(10).iterrows():
             self._log(f"     {row['feature']}: {row['importance']:.4f}")
 
         self._fitted = True
@@ -686,8 +684,8 @@ class AdvancedFeatureSelector:
         self,
         df: pd.DataFrame,
         target_col: str,
-        exclude_cols: Optional[List[str]] = None,
-    ) -> Tuple[pd.DataFrame, List[str]]:
+        exclude_cols: list[str] | None = None,
+    ) -> tuple[pd.DataFrame, list[str]]:
         """
         Fit and transform in one step.
 
@@ -697,7 +695,7 @@ class AdvancedFeatureSelector:
         self.fit(df, target_col, exclude_cols)
         return self.transform(df), self.selected_features
 
-    def get_selected_features(self) -> List[str]:
+    def get_selected_features(self) -> list[str]:
         """Get list of selected features."""
         return self.selected_features.copy()
 
@@ -720,11 +718,11 @@ class AdvancedFeatureSelector:
 
         self._log(f"Saved {len(self.selected_features)} features to {filepath}")
 
-    def load_features(self, filepath: str) -> List[str]:
+    def load_features(self, filepath: str) -> list[str]:
         """Load selected features from JSON file."""
         import json
 
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             self.selected_features = json.load(f)
 
         self._fitted = True
@@ -818,7 +816,7 @@ class DataPipeline:
 
         return self
 
-    def transform(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
+    def transform(self, df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
         """
         Transform data through the pipeline.
 
@@ -843,7 +841,7 @@ class DataPipeline:
         self,
         df: pd.DataFrame,
         target_col: str = "market_forward_excess_returns",
-    ) -> Tuple[pd.DataFrame, List[str]]:
+    ) -> tuple[pd.DataFrame, list[str]]:
         """
         Fit and transform in one step.
 
@@ -857,7 +855,7 @@ class DataPipeline:
         self.fit(df, target_col)
         return self.transform(df)
 
-    def get_selected_features(self) -> List[str]:
+    def get_selected_features(self) -> list[str]:
         """Get selected features."""
         return self.feature_selector.get_selected_features()
 
@@ -869,7 +867,6 @@ class DataPipeline:
             output_dir: Directory to save artifacts.
         """
         from pathlib import Path
-        import pickle
 
         path = Path(output_dir)
         path.mkdir(parents=True, exist_ok=True)

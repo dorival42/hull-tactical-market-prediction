@@ -2,14 +2,13 @@
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 import lightgbm as lgb
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-from src.utils.config import Config, load_feature_config
+from src.utils.config import load_feature_config
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -28,7 +27,7 @@ class FeatureEngineer:
     - Time-based features
     """
 
-    def __init__(self, verbose: bool = True, config: Optional[Dict] = None):
+    def __init__(self, verbose: bool = True, config: dict | None = None):
         """
         Initialize feature engineer.
 
@@ -39,11 +38,11 @@ class FeatureEngineer:
         self.verbose = verbose
         self.config = config or load_feature_config()
 
-        self.feature_names: Optional[List[str]] = None
-        self.numeric_features: List[str] = []
-        self.selected_features: List[str] = []
-        self.scaler: Optional[StandardScaler] = None
-        self._fit_stats: Dict[str, Dict] = {}
+        self.feature_names: list[str] | None = None
+        self.numeric_features: list[str] = []
+        self.selected_features: list[str] = []
+        self.scaler: StandardScaler | None = None
+        self._fit_stats: dict[str, dict] = {}
 
     def _log(self, message: str) -> None:
         """Log message if verbose mode is enabled."""
@@ -451,7 +450,7 @@ class FeatureEngineer:
         target_col: str,
         method: str = "lgb_importance",
         n_features: int = 150,
-    ) -> List[str]:
+    ) -> list[str]:
         """
         Select top features using specified method.
 
@@ -521,9 +520,9 @@ class FeatureEngineer:
 
         self._log(f"Saved {len(self.selected_features)} features to {filepath}")
 
-    def load_selected_features(self, filepath: str) -> List[str]:
+    def load_selected_features(self, filepath: str) -> list[str]:
         """Load selected features from JSON file."""
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             self.selected_features = json.load(f)
 
         self._log(f"Loaded {len(self.selected_features)} features from {filepath}")
@@ -533,8 +532,8 @@ class FeatureEngineer:
         self,
         df_train: pd.DataFrame,
         df_test: pd.DataFrame,
-        feature_cols: List[str],
-    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        feature_cols: list[str],
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
         Normalize features using StandardScaler.
 

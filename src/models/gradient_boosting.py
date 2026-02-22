@@ -1,6 +1,6 @@
 """Gradient Boosting model implementations."""
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 import lightgbm as lgb
 import numpy as np
@@ -21,7 +21,7 @@ class LightGBMModel(BaseModel):
     def __init__(
         self,
         name: str = "LightGBM",
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ):
         """
         Initialize LightGBM model.
@@ -38,8 +38,8 @@ class LightGBMModel(BaseModel):
         self,
         X_train: pd.DataFrame,
         y_train: pd.Series,
-        X_val: Optional[pd.DataFrame] = None,
-        y_val: Optional[pd.Series] = None,
+        X_val: pd.DataFrame | None = None,
+        y_val: pd.Series | None = None,
     ) -> "LightGBMModel":
         """Train the LightGBM model."""
         self.feature_names = X_train.columns.tolist()
@@ -91,7 +91,7 @@ class XGBoostModel(BaseModel):
     def __init__(
         self,
         name: str = "XGBoost",
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ):
         """
         Initialize XGBoost model.
@@ -108,8 +108,8 @@ class XGBoostModel(BaseModel):
         self,
         X_train: pd.DataFrame,
         y_train: pd.Series,
-        X_val: Optional[pd.DataFrame] = None,
-        y_val: Optional[pd.Series] = None,
+        X_val: pd.DataFrame | None = None,
+        y_val: pd.Series | None = None,
     ) -> "XGBoostModel":
         """Train the XGBoost model."""
         self.feature_names = X_train.columns.tolist()
@@ -161,7 +161,7 @@ class CatBoostModel(BaseModel):
     def __init__(
         self,
         name: str = "CatBoost",
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ):
         """
         Initialize CatBoost model.
@@ -178,14 +178,14 @@ class CatBoostModel(BaseModel):
         self,
         X_train: pd.DataFrame,
         y_train: pd.Series,
-        X_val: Optional[pd.DataFrame] = None,
-        y_val: Optional[pd.Series] = None,
+        X_val: pd.DataFrame | None = None,
+        y_val: pd.Series | None = None,
     ) -> "CatBoostModel":
         """Train the CatBoost model."""
         try:
             from catboost import CatBoostRegressor
-        except ImportError:
-            raise ImportError("CatBoost not installed. Install with: pip install catboost")
+        except ImportError as err:
+            raise ImportError("CatBoost not installed. Install with: pip install catboost") from err
 
         self.feature_names = X_train.columns.tolist()
 
@@ -241,7 +241,7 @@ class RandomForestModel(BaseModel):
     def __init__(
         self,
         name: str = "RandomForest",
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ):
         """
         Initialize Random Forest model.
@@ -258,8 +258,8 @@ class RandomForestModel(BaseModel):
         self,
         X_train: pd.DataFrame,
         y_train: pd.Series,
-        X_val: Optional[pd.DataFrame] = None,
-        y_val: Optional[pd.Series] = None,
+        X_val: pd.DataFrame | None = None,
+        y_val: pd.Series | None = None,
     ) -> "RandomForestModel":
         """Train the Random Forest model."""
         self.feature_names = X_train.columns.tolist()

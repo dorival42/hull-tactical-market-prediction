@@ -2,9 +2,8 @@
 
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
-import yaml
 from dotenv import load_dotenv
 from omegaconf import DictConfig, OmegaConf
 
@@ -19,7 +18,7 @@ def get_project_root() -> Path:
 
 
 def load_config(
-    config_path: Optional[str] = None,
+    config_path: str | None = None,
     config_name: str = "config.yaml",
     load_env: bool = True,
 ) -> DictConfig:
@@ -54,12 +53,12 @@ def load_config(
     return config
 
 
-def load_model_params(config_path: Optional[str] = None) -> DictConfig:
+def load_model_params(config_path: str | None = None) -> DictConfig:
     """Load model parameters configuration."""
     return load_config(config_path, "model_params.yaml")
 
 
-def load_feature_config(config_path: Optional[str] = None) -> DictConfig:
+def load_feature_config(config_path: str | None = None) -> DictConfig:
     """Load feature engineering configuration."""
     return load_config(config_path, "features.yaml")
 
@@ -68,9 +67,9 @@ class Config:
     """Configuration manager class."""
 
     _instance: Optional["Config"] = None
-    _config: Optional[DictConfig] = None
-    _model_params: Optional[DictConfig] = None
-    _feature_config: Optional[DictConfig] = None
+    _config: DictConfig | None = None
+    _model_params: DictConfig | None = None
+    _feature_config: DictConfig | None = None
 
     def __new__(cls) -> "Config":
         """Singleton pattern."""
@@ -117,7 +116,7 @@ class Config:
         except Exception:
             return default
 
-    def get_model_params(self, model_type: str) -> Dict[str, Any]:
+    def get_model_params(self, model_type: str) -> dict[str, Any]:
         """Get parameters for a specific model type."""
         params = OmegaConf.to_container(self.model_params.get(model_type, {}))
         return dict(params) if params else {}
@@ -145,6 +144,6 @@ class Config:
         """Get random state for reproducibility."""
         return self.get("training.random_state", 42)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert configuration to dictionary."""
         return OmegaConf.to_container(self.config)
