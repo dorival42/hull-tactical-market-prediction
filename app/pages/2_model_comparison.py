@@ -207,7 +207,7 @@ for i, model in enumerate(MODELS):
         r=vals_closed, theta=cats_closed,
         fill="toself", name=model,
         line=dict(color=COLORS[model], width=2),
-        fillcolor=COLORS[model].replace("#", "rgba(").replace("ff", "ff,0.08)") if False else f"rgba(0,0,0,0.05)",
+        fillcolor="rgba(0,0,0,0.05)",
     ))
 
 fig_radar.update_layout(

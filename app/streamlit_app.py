@@ -450,7 +450,7 @@ with tab2:
             r=v_closed, theta=cats + [cats[0]],
             fill="toself", name=model,
             line=dict(color=colors[i], width=2),
-            fillcolor=colors[i].replace("#", "rgba(").replace("ff", ",0.07)") if len(colors[i]) == 7 else f"rgba(0,212,255,0.07)",
+            opacity=0.75,
         ))
     fig_radar.update_layout(
         **PLOTLY_DARK,
