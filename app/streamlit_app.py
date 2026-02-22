@@ -348,23 +348,20 @@ with tab1:
                 ("V", "V (Volatility)"), ("MOM", "MOM"),
             ]
             _skip = {"date_id", "market_forward_excess_returns"}
-            categories = {
-                label: len([c for c in df.columns if c.startswith(prefix) and c not in _skip])
-                for prefix, label in _prefix_labels
-            }
-            categories = {k: v for k, v in categories.items() if v > 0}
+            # Build categories and nan_pcts together so they always stay aligned
+            categories = {}
+            nan_pcts = []
+            for prefix, label in _prefix_labels:
+                cols_ = [c for c in df.columns if c.startswith(prefix) and c not in _skip]
+                if cols_:
+                    categories[label] = len(cols_)
+                    nan_pcts.append(df[cols_].isna().mean().mean() * 100)
             # Fallback if column names don't match any expected prefix
             if not categories:
                 categories = {"D (Binary)": 9, "E (Macro)": 20, "I (Rates)": 9,
                               "M (Market)": 18, "P (Price)": 13, "S (Sentiment)": 12,
                               "V (Volatility)": 13, "MOM": 1}
-            nan_pcts = []
-            for prefix in ["D", "E", "I", "M", "P", "S", "V", "MOM"]:
-                cols_ = [c for c in df.columns if c.startswith(prefix) and c != "date_id"]
-                if cols_:
-                    nan_pcts.append(df[cols_].isna().mean().mean() * 100)
-                else:
-                    nan_pcts.append(0)
+                nan_pcts = [0] * len(categories)
             fig_nan = px.bar(
                 x=list(categories.keys()),
                 y=nan_pcts,
