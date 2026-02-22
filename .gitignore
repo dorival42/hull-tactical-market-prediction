@@ -172,6 +172,7 @@ logs/
 # Secrets
 .secrets
 credentials.json
+.streamlit/secrets.toml
 
 # Temporary files
 tmp/

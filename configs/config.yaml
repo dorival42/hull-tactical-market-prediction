@@ -1,10 +1,10 @@
 project:
   name: hull-tactical
-  competition: hull-tactical-index-tracking
+  competition: hull-tactical-market-prediction
   version: "1.0.0"
 
 data:
-  kaggle_dataset: hull-tactical/hull-tactical-index-tracking
+  kaggle_dataset: hull-tactical/hull-tactical-market-prediction
   train_file: train.csv
   test_file: test.csv
   target_column: market_forward_excess_returns

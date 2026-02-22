@@ -9,11 +9,15 @@ If artifacts/metrics.json or artifacts/feature_importance.json do not exist
 from __future__ import annotations
 
 import json
+import os
+import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import streamlit as st
+
+KAGGLE_COMPETITION = "hull-tactical-market-prediction"
 
 # ── Root paths ──────────────────────────────────────────────────────────────
 # Works from any page depth because we anchor on __file__
@@ -116,11 +120,70 @@ def load_preprocessing_info() -> Dict[str, Any]:
         return {}
 
 
+def _kaggle_download() -> bool:
+    """
+    Download train.csv from Kaggle using credentials from Streamlit secrets
+    or environment variables.  Returns True on success.
+    """
+    # Resolve credentials: Streamlit secrets > env vars
+    try:
+        kaggle_username = st.secrets.get("KAGGLE_USERNAME", "") or os.environ.get("KAGGLE_USERNAME", "")
+        kaggle_key      = st.secrets.get("KAGGLE_KEY",      "") or os.environ.get("KAGGLE_KEY",      "")
+    except Exception:
+        kaggle_username = os.environ.get("KAGGLE_USERNAME", "")
+        kaggle_key      = os.environ.get("KAGGLE_KEY",      "")
+
+    if not kaggle_username or not kaggle_key:
+        return False
+
+    # Set env vars so the kaggle package picks them up
+    os.environ["KAGGLE_USERNAME"] = kaggle_username
+    os.environ["KAGGLE_KEY"]      = kaggle_key
+
+    try:
+        from kaggle.api.kaggle_api_extended import KaggleApi  # noqa: PLC0415
+
+        api = KaggleApi()
+        api.authenticate()
+
+        DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+        api.competition_download_files(
+            competition=KAGGLE_COMPETITION,
+            path=str(DATA_PATH.parent),
+            quiet=True,
+        )
+
+        # Extract zip if present
+        zip_path = DATA_PATH.parent / f"{KAGGLE_COMPETITION}.zip"
+        if zip_path.exists():
+            with zipfile.ZipFile(zip_path, "r") as zf:
+                zf.extractall(DATA_PATH.parent)
+            zip_path.unlink()
+
+        return DATA_PATH.exists()
+    except Exception:
+        return False
+
+
 @st.cache_data(show_spinner=False)
 def load_train_data() -> Optional[pd.DataFrame]:
-    """Load the Kaggle training CSV from artifacts/data/train.csv."""
+    """
+    Load the Kaggle training CSV from artifacts/data/train.csv.
+
+    If the file is absent (e.g. first run on Streamlit Cloud), tries to
+    download it automatically using KAGGLE_USERNAME / KAGGLE_KEY credentials
+    stored in Streamlit secrets or environment variables.
+    """
     if DATA_PATH.exists():
         return pd.read_csv(DATA_PATH)
+
+    # File not present — attempt download
+    with st.spinner("📥 Downloading training data from Kaggle…"):
+        success = _kaggle_download()
+
+    if success:
+        return pd.read_csv(DATA_PATH)
+
     return None
 
 
