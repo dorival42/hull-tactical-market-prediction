@@ -231,8 +231,18 @@ with st.sidebar:
     ts = m.get("timestamp", "")[:10] if m.get("timestamp") else "—"
     st.caption(f"Experiment: hull-tactical-experiments\nLast trained: {ts}")
 
+# ── Load data & derived KPIs (must come before hero banner) ───────────────────
+df              = load_train_data()
+best_name       = _best_model_fn(REAL_RESULTS, by="rmse")
+best            = REAL_RESULTS.get(best_name, {})
+ensemble        = REAL_RESULTS.get("Ensemble", {})
+n_samples       = preproc_info.get("total_train_samples", len(df) if df is not None else 0)
+n_feats         = preproc_info.get("n_features", len(load_feature_importance()))
+n_models_trained = len([v for v in REAL_RESULTS.values() if v.get("rmse") is not None])
+n_trading_days   = len(df) if df is not None else (n_samples or 0)
+
 # ── Hero banner ───────────────────────────────────────────────────────────────
-st.markdown("""
+st.markdown(f"""
 <div class='hero-banner'>
     <div class='hero-title'>Hull Tactical Market Prediction</div>
     <div style='color:#94a3b8; font-size:1.05rem; margin-top:0.5rem;'>
@@ -240,21 +250,15 @@ st.markdown("""
     </div>
     <div style='margin-top:1.2rem;'>
         <span class='badge'>📅 Phase 2 Live</span>
-        <span class='badge'>🤖 5 Models Trained</span>
-        <span class='badge'>📊 9,048 Trading Days</span>
-        <span class='badge'>🔬 100 Features Selected</span>
-        <span class='badge'>🏆 Best: LightGBM</span>
+        <span class='badge'>🤖 {n_models_trained} Models Trained</span>
+        <span class='badge'>📊 {n_trading_days:,} Trading Days</span>
+        <span class='badge'>🔬 {n_feats} Features Selected</span>
+        <span class='badge'>🏆 Best: {best_name}</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 # ── KPI Row ───────────────────────────────────────────────────────────────────
-df = load_train_data()
-best_name    = _best_model_fn(REAL_RESULTS, by="rmse")
-best         = REAL_RESULTS.get(best_name, {})
-ensemble     = REAL_RESULTS.get("Ensemble", {})
-n_samples    = preproc_info.get("total_train_samples", len(df) if df is not None else 0)
-n_feats      = preproc_info.get("n_features", len(load_feature_importance()))
 
 c1, c2, c3, c4, c5, c6 = st.columns(6)
 with c1:
@@ -304,7 +308,7 @@ with tab1:
             fig_dist.add_vline(x=0, line_dash="dot", line_color="#64748b")
             fig_dist.update_layout(
                 **PLOTLY_DARK,
-                title="Distribution of Excess Returns (9,048 trading days)",
+                title=f"Distribution of Excess Returns ({n_trading_days:,} trading days)",
                 xaxis_title="Excess Return",
                 yaxis_title="Frequency",
                 showlegend=False,
@@ -337,9 +341,23 @@ with tab1:
 
         with col_a:
             st.markdown("<div class='section-title'>Missing Values by Feature Category</div>", unsafe_allow_html=True)
-            categories = {"D (Binary)": 9, "E (Macro)": 20, "I (Rates)": 9,
-                          "M (Market)": 18, "P (Price)": 13, "S (Sentiment)": 12,
-                          "V (Volatility)": 13, "MOM": 1}
+            # Build category counts dynamically from actual column names
+            _prefix_labels = [
+                ("D", "D (Binary)"), ("E", "E (Macro)"), ("I", "I (Rates)"),
+                ("M", "M (Market)"), ("P", "P (Price)"), ("S", "S (Sentiment)"),
+                ("V", "V (Volatility)"), ("MOM", "MOM"),
+            ]
+            _skip = {"date_id", "market_forward_excess_returns"}
+            categories = {
+                label: len([c for c in df.columns if c.startswith(prefix) and c not in _skip])
+                for prefix, label in _prefix_labels
+            }
+            categories = {k: v for k, v in categories.items() if v > 0}
+            # Fallback if column names don't match any expected prefix
+            if not categories:
+                categories = {"D (Binary)": 9, "E (Macro)": 20, "I (Rates)": 9,
+                              "M (Market)": 18, "P (Price)": 13, "S (Sentiment)": 12,
+                              "V (Volatility)": 13, "MOM": 1}
             nan_pcts = []
             for prefix in ["D", "E", "I", "M", "P", "S", "V", "MOM"]:
                 cols_ = [c for c in df.columns if c.startswith(prefix) and c != "date_id"]
@@ -389,7 +407,7 @@ with tab1:
         ))
         fig_cum.add_hline(y=0, line_dash="dot", line_color="#475569")
         fig_cum.update_layout(**PLOTLY_DARK, height=260,
-                              title="Cumulative market_forward_excess_returns (all 9,048 days)",
+                              title=f"Cumulative market_forward_excess_returns (all {n_trading_days:,} days)",
                               xaxis_title="date_id", yaxis_title="Cumulative Return",
                               showlegend=False)
         st.plotly_chart(fig_cum, use_container_width=True)
@@ -398,7 +416,7 @@ with tab1:
 
 # ── TAB 2: Model Results ──────────────────────────────────────────────────────
 with tab2:
-    st.markdown("<div class='section-title'>Real MLflow Results — Kaggle Data (9,048 rows, 100 features)</div>",
+    st.markdown(f"<div class='section-title'>Real MLflow Results — Kaggle Data ({n_trading_days:,} rows, {n_feats} features)</div>",
                 unsafe_allow_html=True)
 
     results_df = pd.DataFrame([
@@ -542,12 +560,16 @@ with tab3:
     st.markdown("<div class='section-title'>Feature Engineering Pipeline Summary</div>", unsafe_allow_html=True)
 
     pipeline_cols = st.columns(5)
+    _nan_pct   = int(preproc_info.get("nan_threshold", 0.3) * 100)
+    _n_cols    = len(df.columns) if df is not None else "—"
+    _n_years   = round(n_trading_days / 252) if n_trading_days else "?"
+    _n_val     = max(0, n_trading_days - n_samples) if n_trading_days and n_samples else "—"
     pipeline_steps = [
-        ("📥 Raw Data", "9,048 rows\n98 columns\n35 years of data"),
+        ("📥 Raw Data",      f"{n_trading_days:,} rows\n{_n_cols} columns\n~{_n_years} years of data"),
         ("⚙️ Feature Eng.", "159 new features\n248 total columns\nRolling, RSI, MACD…"),
-        ("🧹 Preprocessing", "0 columns dropped\n>30% NaN threshold\nMedian imputation"),
-        ("🎯 Selection", "68 correlated removed\n176 candidates\n100 final features"),
-        ("🤖 Training", "5 models trained\n7,158 train samples\n1,790 val samples"),
+        ("🧹 Preprocessing", f"0 columns dropped\n>{_nan_pct}% NaN threshold\nMedian imputation"),
+        ("🎯 Selection",     f"68 correlated removed\n176 candidates\n{n_feats} final features"),
+        ("🤖 Training",      f"{n_models_trained} models trained\n{n_samples:,} train samples\n{_n_val:,} val samples"),
     ]
     for col, (title, desc) in zip(pipeline_cols, pipeline_steps):
         with col:
