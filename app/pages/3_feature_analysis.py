@@ -40,12 +40,11 @@ from utils.artifacts import (  # noqa: E402
     load_feature_importance,
     load_selected_features,
     load_preprocessing_info,
-    load_train_data as _load_train,
+    load_train_data,
     feature_category,
 )
 
 ROOT = Path(__file__).parent.parent.parent
-DATA_PATH    = ROOT / "artifacts" / "data" / "train.csv"
 
 # ── Category config ───────────────────────────────────────────────────────────
 CAT_COLORS = {
@@ -69,15 +68,8 @@ CAT_COUNTS = {
     "Interest": 5, "Lagged Target": 4, "Raw": 2,
 }
 
-@st.cache_data(show_spinner=False)
-def load_data():
-    if DATA_PATH.exists():
-        return pd.read_csv(DATA_PATH)
-    return None
-
-
 # ── Load dynamic artifacts ─────────────────────────────────────────────────────
-df = load_data()
+df = load_train_data()
 selected_features = load_selected_features()          # list[str] from JSON
 preproc_info      = load_preprocessing_info()
 fi_df             = load_feature_importance("LightGBM")   # DataFrame [feature, importance, rank]

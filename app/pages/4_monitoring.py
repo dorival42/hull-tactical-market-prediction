@@ -40,10 +40,7 @@ PLOTLY_DARK = dict(
     font=dict(color="#e2e8f0"),
 )
 
-from utils.artifacts import load_metrics, load_preprocessing_info  # noqa: E402
-
-ROOT = Path(__file__).parent.parent.parent
-DATA_PATH = ROOT / "artifacts" / "data" / "train.csv"
+from utils.artifacts import load_metrics, load_preprocessing_info, load_train_data  # noqa: E402
 
 # Load metrics dynamically
 _metrics = load_metrics()
@@ -55,17 +52,8 @@ window = st.sidebar.selectbox("Rolling Window", ["20 days", "30 days", "60 days"
 show_bmark = st.sidebar.checkbox("Show Benchmark", value=True)
 n_window = int(window.split()[0])
 
-
-@st.cache_data(show_spinner=False)
-def load_data():
-    if DATA_PATH.exists():
-        df = pd.read_csv(DATA_PATH)
-        return df
-    return None
-
-
 # ── Build performance series ───────────────────────────────────────────────────
-df_full = load_data()
+df_full = load_train_data()
 
 np.random.seed(99)
 n_days = 252

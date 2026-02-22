@@ -1,5 +1,6 @@
 """Predictions page — Hull Tactical Dark Dashboard."""
 
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -8,6 +9,11 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from datetime import datetime
+
+# Ensure app/ is on sys.path so utils is importable
+_APP_DIR = Path(__file__).parent.parent
+if str(_APP_DIR) not in sys.path:
+    sys.path.insert(0, str(_APP_DIR))
 
 st.set_page_config(page_title="Predictions — Hull Tactical", page_icon="🔮", layout="wide")
 
@@ -33,15 +39,8 @@ PLOTLY_DARK = dict(
     plot_bgcolor="rgba(11,17,32,0.8)",
     font=dict(color="#e2e8f0"),
 )
-ROOT = Path(__file__).parent.parent.parent
-DATA_PATH = ROOT / "artifacts" / "data" / "train.csv"
 
-
-@st.cache_data(show_spinner=False)
-def load_data():
-    if DATA_PATH.exists():
-        return pd.read_csv(DATA_PATH)
-    return None
+from utils.artifacts import load_train_data as load_data  # noqa: E402
 
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
