@@ -244,55 +244,66 @@ class MLflowTrainer:
         # Create model
         model = ModelFactory.create(model_type)
 
-        # Train with MLflow tracking
+        # Train with optional MLflow tracking
         t0 = time.time()
-        if self._mlflow:
-            with self._mlflow.start_run(run_name=run_name) as run:
-                # Log preprocessing parameters
-                self._mlflow.log_param("nan_threshold", self.nan_threshold)
-                self._mlflow.log_param("catboost_imputation", self.use_catboost_imputation)
-                self._mlflow.log_param("feature_selection_method", self.feature_selection_method)
-                self._mlflow.log_param("date_cutoff", "None (all data)")
+        _mlflow_active = bool(self._mlflow)
+        if _mlflow_active:
+            try:
+                with self._mlflow.start_run(run_name=run_name) as run:
+                    # Log preprocessing parameters
+                    self._mlflow.log_param("nan_threshold", self.nan_threshold)
+                    self._mlflow.log_param("catboost_imputation", self.use_catboost_imputation)
+                    self._mlflow.log_param("feature_selection_method", self.feature_selection_method)
+                    self._mlflow.log_param("date_cutoff", "None (all data)")
 
-                # Log model parameters
-                self._mlflow.log_params(model.params)
-                self._mlflow.log_param("n_features", len(self.feature_cols))
-                self._mlflow.log_param("train_size", len(X_train))
-                self._mlflow.log_param("val_size", len(X_val))
+                    # Log model parameters
+                    self._mlflow.log_params(model.params)
+                    self._mlflow.log_param("n_features", len(self.feature_cols))
+                    self._mlflow.log_param("train_size", len(X_train))
+                    self._mlflow.log_param("val_size", len(X_val))
 
-                # Train model
-                model.fit(X_train, y_train, X_val, y_val)
-                train_time = round(time.time() - t0, 1)
+                    # Train model
+                    model.fit(X_train, y_train, X_val, y_val)
+                    train_time = round(time.time() - t0, 1)
 
-                # Calculate prediction metrics
-                y_pred = model.predict(X_val)
-                pred_metrics = ModelMetrics.calculate_all_metrics(y_val.values, y_pred)
+                    # Calculate prediction metrics
+                    y_pred = model.predict(X_val)
+                    pred_metrics = ModelMetrics.calculate_all_metrics(y_val.values, y_pred)
 
-                # Log metrics (include train_time)
-                self._mlflow.log_metric("train_time_seconds", train_time)
-                self._mlflow.log_metrics(model.training_metrics)
-                self._mlflow.log_metrics(pred_metrics)
+                    # Log metrics (include train_time)
+                    self._mlflow.log_metric("train_time_seconds", train_time)
+                    self._mlflow.log_metrics(model.training_metrics)
+                    self._mlflow.log_metrics(pred_metrics)
 
-                # Log feature importance
-                importance = model.get_feature_importance()
-                importance.to_csv("/tmp/feature_importance.csv", index=False)
-                self._mlflow.log_artifact("/tmp/feature_importance.csv")
+                    # Log feature importance
+                    importance = model.get_feature_importance()
+                    importance.to_csv("/tmp/feature_importance.csv", index=False)
+                    self._mlflow.log_artifact("/tmp/feature_importance.csv")
 
-                # Log selected features
-                with open("/tmp/selected_features.json", "w") as f:
-                    json.dump(self.feature_cols, f)
-                self._mlflow.log_artifact("/tmp/selected_features.json")
+                    # Log selected features
+                    with open("/tmp/selected_features.json", "w") as f:
+                        json.dump(self.feature_cols, f)
+                    self._mlflow.log_artifact("/tmp/selected_features.json")
 
-                # Log model
-                self._mlflow.sklearn.log_model(
-                    model.model,
-                    artifact_path="model",
-                    registered_model_name=f"hull-tactical-{model_type}" if register_model else None,
+                    # Log model
+                    self._mlflow.sklearn.log_model(
+                        model.model,
+                        artifact_path="model",
+                        registered_model_name=f"hull-tactical-{model_type}" if register_model else None,
+                    )
+
+                    run_id = run.info.run_id
+                    logger.info(f"MLflow run completed: {run_id}")
+
+            except Exception as mlflow_err:
+                logger.warning(
+                    f"MLflow tracking unavailable ({type(mlflow_err).__name__}: {mlflow_err}); "
+                    "continuing without experiment tracking."
                 )
+                self._mlflow = None
+                _mlflow_active = False
 
-                run_id = run.info.run_id
-                logger.info(f"MLflow run completed: {run_id}")
-        else:
+        if not _mlflow_active:
             model.fit(X_train, y_train, X_val, y_val)
             train_time = round(time.time() - t0, 1)
             y_pred = model.predict(X_val)
@@ -406,31 +417,42 @@ class MLflowTrainer:
 
         logger.info(f"\nTraining Ensemble with {len(ensemble.models)} models...")
 
-        # Train with MLflow tracking
+        # Train with optional MLflow tracking
         t0 = time.time()
-        if self._mlflow:
-            with self._mlflow.start_run(run_name=run_name) as run:
-                self._mlflow.log_param("ensemble_method", ensemble.method)
-                self._mlflow.log_param("n_models", len(ensemble.models))
-                self._mlflow.log_param("nan_threshold", self.nan_threshold)
-                self._mlflow.log_param("catboost_imputation", self.use_catboost_imputation)
-                self._mlflow.log_param("feature_selection_method", self.feature_selection_method)
+        _mlflow_active = bool(self._mlflow)
+        if _mlflow_active:
+            try:
+                with self._mlflow.start_run(run_name=run_name) as run:
+                    self._mlflow.log_param("ensemble_method", ensemble.method)
+                    self._mlflow.log_param("n_models", len(ensemble.models))
+                    self._mlflow.log_param("nan_threshold", self.nan_threshold)
+                    self._mlflow.log_param("catboost_imputation", self.use_catboost_imputation)
+                    self._mlflow.log_param("feature_selection_method", self.feature_selection_method)
 
-                # Train ensemble
-                ensemble.fit(X_train, y_train, X_val, y_val)
-                train_time = round(time.time() - t0, 1)
+                    # Train ensemble
+                    ensemble.fit(X_train, y_train, X_val, y_val)
+                    train_time = round(time.time() - t0, 1)
 
-                # Calculate prediction metrics
-                y_pred = ensemble.predict(X_val)
-                pred_metrics = ModelMetrics.calculate_all_metrics(y_val.values, y_pred)
+                    # Calculate prediction metrics
+                    y_pred = ensemble.predict(X_val)
+                    pred_metrics = ModelMetrics.calculate_all_metrics(y_val.values, y_pred)
 
-                # Log metrics (include train_time)
-                self._mlflow.log_metric("train_time_seconds", train_time)
-                self._mlflow.log_metrics(ensemble.training_metrics)
-                self._mlflow.log_metrics(pred_metrics)
+                    # Log metrics (include train_time)
+                    self._mlflow.log_metric("train_time_seconds", train_time)
+                    self._mlflow.log_metrics(ensemble.training_metrics)
+                    self._mlflow.log_metrics(pred_metrics)
 
-                logger.info(f"Ensemble MLflow run completed: {run.info.run_id}")
-        else:
+                    logger.info(f"Ensemble MLflow run completed: {run.info.run_id}")
+
+            except Exception as mlflow_err:
+                logger.warning(
+                    f"MLflow tracking unavailable ({type(mlflow_err).__name__}: {mlflow_err}); "
+                    "continuing without experiment tracking."
+                )
+                self._mlflow = None
+                _mlflow_active = False
+
+        if not _mlflow_active:
             ensemble.fit(X_train, y_train, X_val, y_val)
             train_time = round(time.time() - t0, 1)
             y_pred = ensemble.predict(X_val)

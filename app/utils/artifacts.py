@@ -194,7 +194,7 @@ _DEFAULT_PREPROC_CONFIG: Dict[str, Any] = {
     "lower_pct":         0.0,
     "upper_pct":         100.0,
     "nan_threshold_pct": 30,
-    "imputation_method": "Médiane",
+    "imputation_method": "Median",
     "n_features":        100,
 }
 
