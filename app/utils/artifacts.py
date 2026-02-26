@@ -205,17 +205,20 @@ def load_preprocessing_config() -> Dict[str, Any]:
 
     Returns defaults if the file does not exist yet (first run before saving from UI).
     Not cached — always reads fresh so the page picks up changes immediately.
+    Falls back to /tmp on Streamlit Cloud where artifacts/ may not be writable.
     """
-    if not PREPROC_CONFIG_PATH.exists():
-        return _DEFAULT_PREPROC_CONFIG.copy()
-    try:
-        with open(PREPROC_CONFIG_PATH) as f:
-            data = json.load(f)
-        result = _DEFAULT_PREPROC_CONFIG.copy()
-        result.update(data)
-        return result
-    except Exception:
-        return _DEFAULT_PREPROC_CONFIG.copy()
+    _tmp_path = Path("/tmp/preprocessing_config.json")
+    for path in [PREPROC_CONFIG_PATH, _tmp_path]:
+        if path.exists():
+            try:
+                with open(path) as f:
+                    data = json.load(f)
+                result = _DEFAULT_PREPROC_CONFIG.copy()
+                result.update(data)
+                return result
+            except Exception:
+                continue
+    return _DEFAULT_PREPROC_CONFIG.copy()
 
 
 def save_preprocessing_config(config: Dict[str, Any]) -> None:
@@ -224,13 +227,23 @@ def save_preprocessing_config(config: Dict[str, Any]) -> None:
 
     Called by the preprocessing page when the user clicks "Sauvegarder".
     The trainer (scripts/retrain.py) reads this file on every training run.
+    Falls back to /tmp on Streamlit Cloud where /mount/src/ is read-only.
     """
     import datetime as _dt
-    ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
     payload = dict(config)
     payload["saved_at"] = _dt.datetime.now().isoformat(timespec="seconds")
-    with open(PREPROC_CONFIG_PATH, "w") as f:
-        json.dump(payload, f, indent=2)
+
+    # Try artifacts/ first, then /tmp/ as fallback (Streamlit Cloud read-only FS)
+    _tmp_path = Path("/tmp/preprocessing_config.json")
+    for path in [PREPROC_CONFIG_PATH, _tmp_path]:
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "w") as f:
+                json.dump(payload, f, indent=2)
+            return
+        except OSError:
+            continue
+    raise OSError("Impossible d'écrire la configuration (ni artifacts/ ni /tmp/ accessibles).")
 
 
 # ── Convenience helpers ──────────────────────────────────────────────────────

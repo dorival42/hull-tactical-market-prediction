@@ -76,13 +76,21 @@ PLOTLY_DARK = dict(
     font=dict(color="#e2e8f0", family="Inter,sans-serif"),
 )
 
-from utils.artifacts import (  # noqa: E402
-    load_train_data,
-    load_metrics,
-    feature_category,
-    load_preprocessing_config,
-    save_preprocessing_config,
-)
+try:
+    from utils.artifacts import (  # noqa: E402, I001
+        load_train_data,
+        load_metrics,
+        feature_category,
+        load_preprocessing_config,
+        save_preprocessing_config,
+    )
+except Exception as _import_err:
+    st.error(
+        f"**Erreur lors du chargement de `utils.artifacts` :**\n\n"
+        f"```\n{type(_import_err).__name__}: {_import_err}\n```\n\n"
+        "Vérifiez que `app/utils/artifacts.py` est présent et correct."
+    )
+    st.stop()
 
 # ── Constantes ────────────────────────────────────────────────────────────────
 TARGET_COL   = "market_forward_excess_returns"
