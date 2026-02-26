@@ -225,6 +225,7 @@ with st.sidebar:
     <a class='sidebar-link' href='https://dagshub.com/dorival42/hull-tactical-market-prediction.mlflow/#/experiments/0' target='_blank'>🔬 MLflow Dashboard</a>
     <a class='sidebar-link' href='https://www.kaggle.com/competitions/hull-tactical-market-prediction' target='_blank'>📊 Kaggle Competition</a>
     <a class='sidebar-link' href='https://github.com' target='_blank'>💻 GitHub Repository</a>
+    <a class='sidebar-link' href='https://www.linkedin.com/in/pdorival' target='_blank'>👤 LinkedIn Profile</a>
     """, unsafe_allow_html=True)
 
     st.markdown("---")
