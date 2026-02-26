@@ -29,10 +29,11 @@ ARTIFACTS_DIR = _ROOT / "artifacts"
 DATA_PATH     = ARTIFACTS_DIR / "data" / "train.csv"
 
 # ── File paths ───────────────────────────────────────────────────────────────
-METRICS_PATH     = ARTIFACTS_DIR / "metrics.json"
-FI_PATH          = ARTIFACTS_DIR / "feature_importance.json"
-SEL_FEATS_PATH   = ARTIFACTS_DIR / "selected_features.json"
-PREPROC_PATH     = ARTIFACTS_DIR / "preprocessing_info.json"
+METRICS_PATH         = ARTIFACTS_DIR / "metrics.json"
+FI_PATH              = ARTIFACTS_DIR / "feature_importance.json"
+SEL_FEATS_PATH       = ARTIFACTS_DIR / "selected_features.json"
+PREPROC_PATH         = ARTIFACTS_DIR / "preprocessing_info.json"
+PREPROC_CONFIG_PATH  = ARTIFACTS_DIR / "preprocessing_config.json"
 
 # ── Fallback defaults (used when files not found) ────────────────────────────
 _FALLBACK_METRICS: Dict[str, Any] = {
@@ -185,6 +186,51 @@ def load_train_data() -> Optional[pd.DataFrame]:
         return pd.read_csv(DATA_PATH)
 
     return None
+
+
+# ── Preprocessing config (shared between UI and training pipeline) ────────────
+
+_DEFAULT_PREPROC_CONFIG: Dict[str, Any] = {
+    "lower_pct":         0.0,
+    "upper_pct":         100.0,
+    "nan_threshold_pct": 30,
+    "imputation_method": "Médiane",
+    "n_features":        100,
+}
+
+
+def load_preprocessing_config() -> Dict[str, Any]:
+    """
+    Load user-defined preprocessing config from artifacts/preprocessing_config.json.
+
+    Returns defaults if the file does not exist yet (first run before saving from UI).
+    Not cached — always reads fresh so the page picks up changes immediately.
+    """
+    if not PREPROC_CONFIG_PATH.exists():
+        return _DEFAULT_PREPROC_CONFIG.copy()
+    try:
+        with open(PREPROC_CONFIG_PATH) as f:
+            data = json.load(f)
+        result = _DEFAULT_PREPROC_CONFIG.copy()
+        result.update(data)
+        return result
+    except Exception:
+        return _DEFAULT_PREPROC_CONFIG.copy()
+
+
+def save_preprocessing_config(config: Dict[str, Any]) -> None:
+    """
+    Persist preprocessing config to artifacts/preprocessing_config.json.
+
+    Called by the preprocessing page when the user clicks "Sauvegarder".
+    The trainer (scripts/retrain.py) reads this file on every training run.
+    """
+    import datetime as _dt
+    ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+    payload = dict(config)
+    payload["saved_at"] = _dt.datetime.now().isoformat(timespec="seconds")
+    with open(PREPROC_CONFIG_PATH, "w") as f:
+        json.dump(payload, f, indent=2)
 
 
 # ── Convenience helpers ──────────────────────────────────────────────────────

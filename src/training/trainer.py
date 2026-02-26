@@ -102,6 +102,8 @@ class MLflowTrainer:
         warmup_period: int = 100,
         cutoff_date_id: int | None = None,
         n_features: int | None = None,
+        start_row_pct: float | None = None,
+        end_row_pct: float | None = None,
     ) -> pd.DataFrame:
         """
         Load data and perform complete preprocessing.
@@ -147,6 +149,18 @@ class MLflowTrainer:
         loader = KaggleDataLoader()
         self.train_df = loader.load_train(cutoff_date_id=cutoff_date_id)
         logger.info(f"   Loaded: {self.train_df.shape[0]} rows x {self.train_df.shape[1]} columns")
+
+        # Apply percentage-based row range (from preprocessing UI config)
+        if start_row_pct is not None or end_row_pct is not None:
+            n_total   = len(self.train_df)
+            start_idx = int(n_total * (start_row_pct or 0.0) / 100)
+            end_idx   = int(n_total * (end_row_pct   or 100.0) / 100)
+            end_idx   = max(end_idx, start_idx + 1)
+            self.train_df = self.train_df.iloc[start_idx:end_idx].copy().reset_index(drop=True)
+            logger.info(
+                f"   Row range applied: {start_row_pct or 0:.1f}% → "
+                f"{end_row_pct or 100:.1f}% ({len(self.train_df)} rows retained)"
+            )
 
         # Step 2: Feature engineering (optional)
         if use_feature_engineering:
