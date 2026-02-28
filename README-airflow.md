@@ -60,7 +60,8 @@ Adds Apache Airflow 2.8, ChromaDB, and a local MLflow server on top of the exist
 
 ### 1. Prerequisites
 
-- Docker Desktop ≥ 24 (with Compose v2)
+- Docker ≥ 24 + **Docker Compose v2 standalone** (`docker-compose` binary, not the `docker compose` plugin)
+  - Check: `docker-compose --version` → should print `Docker Compose version v2.x`
 - At least **8 GB RAM** allocated to Docker (Airflow + ML libs)
 - A [NewsAPI](https://newsapi.org) free API key
 
@@ -92,13 +93,13 @@ KAGGLE_KEY=<your_kaggle_api_key>
 
 ```bash
 # Build the custom Airflow image (first run only — ~5 min)
-docker compose -f docker-compose.airflow.yml build airflow-webserver
+docker-compose -f docker-compose.airflow.yml build airflow-webserver
 
 # Start all services
-docker compose -f docker-compose.airflow.yml up -d
+docker-compose -f docker-compose.airflow.yml up -d
 
 # Watch logs until airflow-init completes
-docker compose -f docker-compose.airflow.yml logs -f airflow-init
+docker-compose -f docker-compose.airflow.yml logs -f airflow-init
 ```
 
 Wait for the message: `✅ Airflow init complete.`
@@ -219,18 +220,29 @@ hull-tactical-market-prediction/
 ## Stop the stack
 
 ```bash
-docker compose -f docker-compose.airflow.yml down
+docker-compose -f docker-compose.airflow.yml down
 
 # Remove all volumes (wipes DB, MLflow data, ChromaDB index):
-docker compose -f docker-compose.airflow.yml down -v
+docker-compose -f docker-compose.airflow.yml down -v
 ```
 
 ---
 
 ## Troubleshooting
 
+### `docker compose` not found / unknown flag `-f`
+Your Docker installation uses the **standalone binary** (not the CLI plugin). Always use the hyphenated form:
+```bash
+# Wrong (plugin syntax — not installed):
+docker compose -f docker-compose.airflow.yml up -d
+
+# Correct (standalone binary):
+docker-compose -f docker-compose.airflow.yml up -d
+```
+Verify: `which docker-compose` → `/usr/local/bin/docker-compose`
+
 ### `airflow-init` exits with code 1
-Check logs: `docker compose -f docker-compose.airflow.yml logs airflow-init`
+Check logs: `docker-compose -f docker-compose.airflow.yml logs airflow-init`
 Most common cause: PostgreSQL not ready yet. The init container retries automatically.
 
 ### DAG shows "Import Error" in the UI
@@ -242,13 +254,13 @@ Ensure the `PYTHONPATH` volume mount is correct in `docker-compose.airflow.yml`.
 ### ChromaDB connection refused
 Verify the ChromaDB container is healthy:
 ```bash
-docker compose -f docker-compose.airflow.yml ps chromadb
+docker-compose -f docker-compose.airflow.yml ps chromadb
 curl http://localhost:8000/api/v1/heartbeat
 ```
 
 ### MLflow runs not appearing
 The local MLflow uses PostgreSQL as backend. Check:
 ```bash
-docker compose -f docker-compose.airflow.yml logs mlflow
+docker-compose -f docker-compose.airflow.yml logs mlflow
 ```
 The `mlflow` database is created by `airflow/init-mlflow-db.sql` on first PostgreSQL start.

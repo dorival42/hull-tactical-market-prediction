@@ -9,43 +9,43 @@
 
 ## Team
 
-| Participant | Rôle | Responsabilités |
-|-------------|------|-----------------|
-| **Pierre Chrislin DORIVAL** | Chef de projet | Coordination générale du projet, architecture technique, MLOps, DevOps, LLMOps |
-| **Émile STEEVENSON** | DevOps | Infrastructure, automatisation et gestion des environnements de déploiement |
-| **Jobed FELIMA** | Data Science — Finance | Analyse financière, calcul de features, exploration des données (EDA) |
-| **Sébastien Witchmen ESTANIS** | Data Science — Finance | Analyse financière, calcul de features, exploration des données (EDA) |
+| Participant | Role | Responsibilities |
+|-------------|------|------------------|
+| **Pierre Chrislin DORIVAL** | Project Lead | Overall project coordination, technical architecture, MLOps, DevOps, LLMOps |
+| **Émile STEEVENSON** | DevOps Engineer | Infrastructure, automation, and deployment environment management |
+| **Jobed FELIMA** | Data Science — Finance | Financial analysis, feature engineering, exploratory data analysis (EDA) |
+| **Sébastien Witchmen ESTANIS** | Data Science — Finance | Financial analysis, feature engineering, exploratory data analysis (EDA) |
 
-### Descriptions détaillées
+### Detailed Profiles
 
-#### Pierre Chrislin DORIVAL — Chef de projet / MLOps / DevOps
-Pierre Chrislin assure la **direction technique et opérationnelle** du projet. Il est responsable de la conception de l'architecture MLOps de bout en bout : depuis l'ingestion des données jusqu'au déploiement des modèles en production. Ses domaines d'expertise couvrent :
-- **MLOps** : suivi des expériences avec MLflow (hébergé sur DagsHub), versioning des modèles, enregistrement automatique des artefacts et gestion du cycle de vie des modèles.
-- **DevOps** : mise en place des pipelines CI/CD avec **GitHub Actions**, containerisation avec Docker, gestion des environnements reproductibles et orchestration via Makefile.
-- **LLMOps** : application des meilleures pratiques de gestion des modèles de langage dans un contexte de production.
-- **Développement** : développement du pipeline d'entraînement (`MLflowTrainer`), du tableau de bord Streamlit, des modules de prétraitement et d'ingénierie de features.
-- **Déploiement** : intégration avec l'API Kaggle (gRPC), soumission des notebooks de prédiction et gestion de l'inférence en temps réel.
+#### Pierre Chrislin DORIVAL — Project Lead / MLOps / DevOps
+Pierre Chrislin serves as the **technical and operational lead** of the project. He is responsible for designing the end-to-end MLOps architecture — from raw data ingestion through to production model deployment. His domains of expertise include:
+- **MLOps**: experiment tracking with MLflow (hosted on DagsHub), model versioning, automated artifact registration, and full model lifecycle management.
+- **DevOps**: CI/CD pipeline design with **GitHub Actions**, containerisation with Docker, reproducible environment management, and workflow orchestration via Makefile.
+- **LLMOps**: application of production-grade best practices for large language model operationalisation.
+- **Development**: implementation of the training pipeline (`MLflowTrainer`), Streamlit monitoring dashboard, preprocessing modules, and feature engineering layers.
+- **Deployment**: integration with the Kaggle evaluation API (gRPC), prediction notebook submission, and real-time inference management.
 
-#### Émile STEEVENSON — DevOps
-Émile prend en charge l'ensemble de l'**infrastructure technique** du projet. Il intervient sur :
-- La configuration et la maintenance des environnements de développement et de production.
-- L'automatisation des tâches récurrentes (tests, linting, packaging) via les pipelines CI/CD.
-- La gestion des conteneurs Docker pour garantir la reproductibilité des expériences.
-- La supervision de la fiabilité et de la disponibilité des services déployés.
+#### Émile STEEVENSON — DevOps Engineer
+Émile owns the entire **technical infrastructure** of the project. His contributions span:
+- Configuration and maintenance of development and production environments.
+- Automation of recurring engineering tasks (testing, linting, packaging) through CI/CD pipelines.
+- Docker container management to guarantee experiment reproducibility across environments.
+- Operational monitoring of the reliability and availability of deployed services.
 
-#### Jobed FELIMA — Monnaie, Banque & Finance / Data Science
-Jobed apporte une expertise en **finance de marché et en analyse quantitative**. Il contribue notamment à :
-- La compréhension et l'interprétation des variables financières (taux d'intérêt, spreads de crédit, indicateurs macroéconomiques).
-- Le **calcul de features** pertinentes à partir des données brutes : indicateurs techniques (RSI, MACD, moyennes mobiles), métriques de momentum et de volatilité.
-- L'**analyse exploratoire des données (EDA)** : détection des valeurs manquantes, analyse des distributions, corrélations entre variables et identification des patterns saisonniers.
-- La validation économique des signaux produits par les modèles au regard des dynamiques de marché.
+#### Jobed FELIMA — Monetary Economics, Banking & Finance / Data Science
+Jobed brings deep expertise in **market finance and quantitative analysis**. His key contributions include:
+- Interpretation of financial input variables: interest rates, credit spreads, and macroeconomic indicators.
+- **Feature engineering** from raw market data: technical indicators (RSI, MACD, moving averages), momentum metrics, and realised volatility measures.
+- **Exploratory Data Analysis (EDA)**: missing value detection, distributional analysis, inter-feature correlation studies, and identification of seasonal market patterns.
+- Economic validation of model-generated signals against empirically observed market dynamics.
 
-#### Sébastien Witchmen ESTANIS — Monnaie, Banque & Finance / Data Science
-Sébastien contribue lui aussi sur le volet **finance quantitative et data science**. Ses missions incluent :
-- L'analyse des données financières sous l'angle de la **théorie monétaire et bancaire** : interprétation des indicateurs de politique monétaire (Fed Funds Rate, courbe des taux), du sentiment de marché et des ratios de valorisation.
-- La construction et la validation des **features financières** : agrégats par catégorie (V, M, S, P, I, E), indicateurs de sentiment, spreads et variables de régime.
-- La conduite de l'**EDA** : visualisation des séries temporelles, analyse de stationnarité, étude des distributions de rendements et identification des biais potentiels.
-- La garantie de la cohérence économique des variables utilisées en entrée des modèles de machine learning.
+#### Sébastien Witchmen ESTANIS — Monetary Economics, Banking & Finance / Data Science
+Sébastien contributes to the **quantitative finance and data science** dimension of the project. His responsibilities include:
+- Financial data analysis through the lens of **monetary and banking theory**: interpretation of monetary policy indicators (Fed Funds Rate, yield curve), market sentiment indices, and valuation multiples.
+- Construction and validation of **financial features**: category-level aggregates (V, M, S, P, I, E), sentiment indicators, credit spreads, and market regime variables.
+- **EDA** execution: time series visualisation, stationarity testing, return distribution analysis, and identification of potential data biases or look-ahead contamination.
+- Ensuring the economic consistency and interpretability of input variables fed into the machine learning models.
 
 ---
 

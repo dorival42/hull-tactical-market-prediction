@@ -1,7 +1,7 @@
 # =============================================================================
 # Hull Tactical — Full MLOps Stack
 # Services: PostgreSQL · Airflow (webserver + scheduler) · MLflow · ChromaDB · Streamlit
-# Usage: docker compose -f docker-compose.airflow.yml up -d
+# Usage: docker-compose -f docker-compose.airflow.yml up -d
 # =============================================================================
 
 x-airflow-common: &airflow-common

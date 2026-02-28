@@ -603,11 +603,48 @@ with tab4:
         st.markdown("""
         <div class='dark-card'>
             <div class='section-title'>Team</div>
-            <div style='color:#94a3b8; line-height:2;'>
-                👤 <strong style='color:#e2e8f0;'>Pierre Chrislin DORIVAL</strong><br>
-                👤 <strong style='color:#e2e8f0;'>Emile STEEVENSON</strong><br>
-                👤 <strong style='color:#e2e8f0;'>Jobed FELIMA</strong><br>
-                👤 <strong style='color:#e2e8f0;'>Sebastien Witchmen ESTANIS</strong>
+            <div style='display:flex; flex-direction:column; gap:0.85rem; margin-top:0.5rem;'>
+
+                <div style='border-left:3px solid #00d4ff; padding-left:0.75rem;'>
+                    <div style='color:#e2e8f0; font-weight:600;'>Pierre Chrislin DORIVAL</div>
+                    <div style='color:#00d4ff; font-size:0.78rem; font-weight:500; letter-spacing:0.04em;'>
+                        PROJECT LEAD · MLOPS · DEVOPS · LLMOPS
+                    </div>
+                    <div style='color:#64748b; font-size:0.78rem; margin-top:0.2rem;'>
+                        End-to-end ML architecture · MLflow · GitHub Actions · Docker · gRPC inference
+                    </div>
+                </div>
+
+                <div style='border-left:3px solid #7c3aed; padding-left:0.75rem;'>
+                    <div style='color:#e2e8f0; font-weight:600;'>Émile STEEVENSON</div>
+                    <div style='color:#a78bfa; font-size:0.78rem; font-weight:500; letter-spacing:0.04em;'>
+                        DEVOPS ENGINEER
+                    </div>
+                    <div style='color:#64748b; font-size:0.78rem; margin-top:0.2rem;'>
+                        Infrastructure · CI/CD automation · Container orchestration · Service reliability
+                    </div>
+                </div>
+
+                <div style='border-left:3px solid #059669; padding-left:0.75rem;'>
+                    <div style='color:#e2e8f0; font-weight:600;'>Jobed FELIMA</div>
+                    <div style='color:#34d399; font-size:0.78rem; font-weight:500; letter-spacing:0.04em;'>
+                        DATA SCIENCE · MONETARY ECONOMICS & FINANCE
+                    </div>
+                    <div style='color:#64748b; font-size:0.78rem; margin-top:0.2rem;'>
+                        Feature engineering · RSI / MACD · Market dynamics · EDA
+                    </div>
+                </div>
+
+                <div style='border-left:3px solid #d97706; padding-left:0.75rem;'>
+                    <div style='color:#e2e8f0; font-weight:600;'>Sébastien Witchmen ESTANIS</div>
+                    <div style='color:#fbbf24; font-size:0.78rem; font-weight:500; letter-spacing:0.04em;'>
+                        DATA SCIENCE · BANKING & QUANTITATIVE FINANCE
+                    </div>
+                    <div style='color:#64748b; font-size:0.78rem; margin-top:0.2rem;'>
+                        Monetary policy indicators · Regime features · Return distribution · EDA
+                    </div>
+                </div>
+
             </div>
             <div style='margin-top:1.2rem;'>
                 <div class='section-title'>Tech Stack</div>
