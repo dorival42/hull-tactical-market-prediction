@@ -1,0 +1,17 @@
+# =============================================================================
+# Airflow image — extends official 2.8.1 with project ML dependencies
+# =============================================================================
+FROM apache/airflow:2.8.1-python3.11
+
+# Switch to root to install system packages
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc g++ libgomp1 curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Back to airflow user (required by the official image)
+USER airflow
+
+# Copy and install extra Python dependencies
+COPY requirements-airflow.txt /tmp/requirements-airflow.txt
+RUN pip install --no-cache-dir -r /tmp/requirements-airflow.txt

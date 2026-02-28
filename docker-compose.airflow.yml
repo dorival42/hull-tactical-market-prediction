@@ -1,0 +1,233 @@
+# =============================================================================
+# Hull Tactical — Full MLOps Stack
+# Services: PostgreSQL · Airflow (webserver + scheduler) · MLflow · ChromaDB · Streamlit
+# Usage: docker compose -f docker-compose.airflow.yml up -d
+# =============================================================================
+
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: airflow/Dockerfile.airflow
+  image: hull-tactical-airflow:2.8
+  environment: &airflow-env
+    # --- Airflow core ---
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    # --- Database ---
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "false"
+    # --- Webserver ---
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+    AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+    # --- Logging ---
+    AIRFLOW__LOGGING__LOGGING_LEVEL: INFO
+    # --- Project env forwarded to DAGs ---
+    KAGGLE_USERNAME: ${KAGGLE_USERNAME}
+    KAGGLE_KEY: ${KAGGLE_KEY}
+    MLFLOW_TRACKING_URI: http://mlflow:5000
+    CHROMADB_HOST: chromadb
+    CHROMADB_PORT: "8000"
+    NEWS_API_KEY: ${NEWS_API_KEY}
+    PYTHONPATH: /opt/airflow/project
+  volumes:
+    - ./dags:/opt/airflow/dags                  # DAG definitions
+    - ./logs/airflow:/opt/airflow/logs           # Airflow task logs
+    - ./airflow/plugins:/opt/airflow/plugins     # Custom plugins (empty)
+    - ./artifacts:/opt/airflow/project/artifacts # Shared model artifacts
+    - ./src:/opt/airflow/project/src             # Project source code
+    - ./configs:/opt/airflow/project/configs     # YAML configs
+    - ./.env:/opt/airflow/project/.env:ro        # Credentials (read-only)
+  depends_on:
+    postgres:
+      condition: service_healthy
+  networks:
+    - hull-tactical-net
+  restart: unless-stopped
+
+# =============================================================================
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL — Airflow metadata database + MLflow backend store
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: hull-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-airflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airflow}
+      POSTGRES_DB: ${POSTGRES_DB:-airflow}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./airflow/init-mlflow-db.sql:/docker-entrypoint-initdb.d/init-mlflow-db.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-airflow}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    networks:
+      - hull-tactical-net
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Airflow — DB init + admin user creation (runs once then exits)
+  # ---------------------------------------------------------------------------
+  airflow-init:
+    <<: *airflow-common
+    container_name: hull-airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db upgrade
+        airflow users create \
+          --username ${AIRFLOW_ADMIN_USER:-admin} \
+          --password ${AIRFLOW_ADMIN_PASSWORD:-admin} \
+          --firstname Hull \
+          --lastname Tactical \
+          --role Admin \
+          --email admin@hull-tactical.local
+        # Set Airflow Variables used by DAGs
+        airflow variables set NEWS_API_KEY "${NEWS_API_KEY}"
+        airflow variables set KAGGLE_USERNAME "${KAGGLE_USERNAME}"
+        airflow variables set KAGGLE_KEY "${KAGGLE_KEY}"
+        airflow variables set MLFLOW_TRACKING_URI "http://mlflow:5000"
+        airflow variables set CHROMADB_HOST "chromadb"
+        airflow variables set CHROMADB_PORT "8000"
+        echo "✅ Airflow init complete."
+    restart: on-failure
+
+  # ---------------------------------------------------------------------------
+  # Airflow — Webserver (UI on port 8080)
+  # ---------------------------------------------------------------------------
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: hull-airflow-webserver
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Airflow — Scheduler (triggers DAG runs)
+  # ---------------------------------------------------------------------------
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: hull-airflow-scheduler
+    command: scheduler
+    healthcheck:
+      test: ["CMD", "airflow", "jobs", "check", "--job-type", "SchedulerJob", "--limit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # MLflow — Experiment tracking (local, port 5000)
+  # ---------------------------------------------------------------------------
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.9.0
+    container_name: hull-mlflow
+    ports:
+      - "5000:5000"
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres:5432/mlflow
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlflow/artifacts
+    volumes:
+      - mlflow-artifacts:/mlflow/artifacts
+    command: >
+      mlflow server
+      --backend-store-uri postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres:5432/mlflow
+      --default-artifact-root /mlflow/artifacts
+      --host 0.0.0.0
+      --port 5000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - hull-tactical-net
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # ChromaDB — Vector store for RAG embeddings (port 8000)
+  # ---------------------------------------------------------------------------
+  chromadb:
+    image: chromadb/chroma:0.4.22
+    container_name: hull-chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chromadb-data:/chroma/chroma
+    environment:
+      IS_PERSISTENT: "TRUE"
+      ANONYMIZED_TELEMETRY: "FALSE"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - hull-tactical-net
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Streamlit — Dashboard (port 8501) — unchanged from original
+  # ---------------------------------------------------------------------------
+  streamlit:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: hull-streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      KAGGLE_USERNAME: ${KAGGLE_USERNAME}
+      KAGGLE_KEY: ${KAGGLE_KEY}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      PYTHONPATH: /app
+    volumes:
+      - ./artifacts:/app/artifacts
+      - ./configs:/app/configs:ro
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - hull-tactical-net
+    restart: unless-stopped
+
+# =============================================================================
+volumes:
+  postgres-data:
+  mlflow-artifacts:
+  chromadb-data:
+
+networks:
+  hull-tactical-net:
+    name: hull-tactical-net

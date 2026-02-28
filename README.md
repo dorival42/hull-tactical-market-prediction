@@ -3,8 +3,49 @@
 > **Kaggle Competition | S&P 500 Excess Return Forecasting**
 > Real-time market prediction system built for the [Hull Tactical Index Tracking](https://www.kaggle.com/competitions/hull-tactical-market-prediction) Kaggle competition.
 
-**Team:** Pierre Chrislin DORIVAL · Emile STEEVENSON · Jobed FELIMA · Sebastien Witchmen ESTANIS
 **Analysis Date:** November 7, 2025
+
+---
+
+## Team
+
+| Participant | Rôle | Responsabilités |
+|-------------|------|-----------------|
+| **Pierre Chrislin DORIVAL** | Chef de projet | Coordination générale du projet, architecture technique, MLOps, DevOps, LLMOps |
+| **Émile STEEVENSON** | DevOps | Infrastructure, automatisation et gestion des environnements de déploiement |
+| **Jobed FELIMA** | Data Science — Finance | Analyse financière, calcul de features, exploration des données (EDA) |
+| **Sébastien Witchmen ESTANIS** | Data Science — Finance | Analyse financière, calcul de features, exploration des données (EDA) |
+
+### Descriptions détaillées
+
+#### Pierre Chrislin DORIVAL — Chef de projet / MLOps / DevOps
+Pierre Chrislin assure la **direction technique et opérationnelle** du projet. Il est responsable de la conception de l'architecture MLOps de bout en bout : depuis l'ingestion des données jusqu'au déploiement des modèles en production. Ses domaines d'expertise couvrent :
+- **MLOps** : suivi des expériences avec MLflow (hébergé sur DagsHub), versioning des modèles, enregistrement automatique des artefacts et gestion du cycle de vie des modèles.
+- **DevOps** : mise en place des pipelines CI/CD avec **GitHub Actions**, containerisation avec Docker, gestion des environnements reproductibles et orchestration via Makefile.
+- **LLMOps** : application des meilleures pratiques de gestion des modèles de langage dans un contexte de production.
+- **Développement** : développement du pipeline d'entraînement (`MLflowTrainer`), du tableau de bord Streamlit, des modules de prétraitement et d'ingénierie de features.
+- **Déploiement** : intégration avec l'API Kaggle (gRPC), soumission des notebooks de prédiction et gestion de l'inférence en temps réel.
+
+#### Émile STEEVENSON — DevOps
+Émile prend en charge l'ensemble de l'**infrastructure technique** du projet. Il intervient sur :
+- La configuration et la maintenance des environnements de développement et de production.
+- L'automatisation des tâches récurrentes (tests, linting, packaging) via les pipelines CI/CD.
+- La gestion des conteneurs Docker pour garantir la reproductibilité des expériences.
+- La supervision de la fiabilité et de la disponibilité des services déployés.
+
+#### Jobed FELIMA — Monnaie, Banque & Finance / Data Science
+Jobed apporte une expertise en **finance de marché et en analyse quantitative**. Il contribue notamment à :
+- La compréhension et l'interprétation des variables financières (taux d'intérêt, spreads de crédit, indicateurs macroéconomiques).
+- Le **calcul de features** pertinentes à partir des données brutes : indicateurs techniques (RSI, MACD, moyennes mobiles), métriques de momentum et de volatilité.
+- L'**analyse exploratoire des données (EDA)** : détection des valeurs manquantes, analyse des distributions, corrélations entre variables et identification des patterns saisonniers.
+- La validation économique des signaux produits par les modèles au regard des dynamiques de marché.
+
+#### Sébastien Witchmen ESTANIS — Monnaie, Banque & Finance / Data Science
+Sébastien contribue lui aussi sur le volet **finance quantitative et data science**. Ses missions incluent :
+- L'analyse des données financières sous l'angle de la **théorie monétaire et bancaire** : interprétation des indicateurs de politique monétaire (Fed Funds Rate, courbe des taux), du sentiment de marché et des ratios de valorisation.
+- La construction et la validation des **features financières** : agrégats par catégorie (V, M, S, P, I, E), indicateurs de sentiment, spreads et variables de régime.
+- La conduite de l'**EDA** : visualisation des séries temporelles, analyse de stationnarité, étude des distributions de rendements et identification des biais potentiels.
+- La garantie de la cohérence économique des variables utilisées en entrée des modèles de machine learning.
 
 ---
 
