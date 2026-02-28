@@ -18,7 +18,7 @@
 
 ### Detailed Profiles
 
-#### Pierre Chrislin DORIVAL — Project Lead / MLOps / DevOps
+#### Pierre Chrislin DORIVAL — Project Lead / Data Engineer / MLOps / DevOps
 Pierre Chrislin serves as the **technical and operational lead** of the project. He is responsible for designing the end-to-end MLOps architecture — from raw data ingestion through to production model deployment. His domains of expertise include:
 - **MLOps**: experiment tracking with MLflow (hosted on DagsHub), model versioning, automated artifact registration, and full model lifecycle management.
 - **DevOps**: CI/CD pipeline design with **GitHub Actions**, containerisation with Docker, reproducible environment management, and workflow orchestration via Makefile.

@@ -608,7 +608,7 @@ with tab4:
                 <div style='border-left:3px solid #00d4ff; padding-left:0.75rem;'>
                     <div style='color:#e2e8f0; font-weight:600;'>Pierre Chrislin DORIVAL</div>
                     <div style='color:#00d4ff; font-size:0.78rem; font-weight:500; letter-spacing:0.04em;'>
-                        PROJECT LEAD · MLOPS · DEVOPS · LLMOPS
+                        PROJECT LEAD · DATA ENGINEER · MLOPS · DEVOPS · LLMOPS
                     </div>
                     <div style='color:#64748b; font-size:0.78rem; margin-top:0.2rem;'>
                         End-to-end ML architecture · MLflow · GitHub Actions · Docker · gRPC inference
