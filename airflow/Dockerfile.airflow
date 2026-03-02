@@ -12,6 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Back to airflow user (required by the official image)
 USER airflow
 
+# Install torch CPU-only first (avoids downloading ~3GB of CUDA libs)
+RUN pip install --no-cache-dir \
+    torch>=2.1.0 \
+    --index-url https://download.pytorch.org/whl/cpu
+
 # Copy and install extra Python dependencies
 COPY requirements-airflow.txt /tmp/requirements-airflow.txt
 RUN pip install --no-cache-dir -r /tmp/requirements-airflow.txt

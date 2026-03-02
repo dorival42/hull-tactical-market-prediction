@@ -24,8 +24,8 @@ COPY src/ src/
 COPY configs/ configs/
 COPY app/ app/
 
-# Copy artifacts if they exist
-COPY artifacts/ artifacts/ 2>/dev/null || true
+# Copy artifacts
+COPY artifacts/ artifacts/
 
 # Set environment variables
 ENV PYTHONPATH=/app

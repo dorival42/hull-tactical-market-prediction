@@ -16,7 +16,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
     # --- Database ---
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD_ENCODED}@postgres:5432/${POSTGRES_DB}
     AIRFLOW__DATABASE__LOAD_DEFAULT_CONNECTIONS: "false"
     # --- Webserver ---
     AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
@@ -148,24 +148,29 @@ services:
     ports:
       - "5000:5000"
     environment:
-      MLFLOW_BACKEND_STORE_URI: postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres:5432/mlflow
+      MLFLOW_BACKEND_STORE_URI: postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD_ENCODED:-airflow}@postgres:5432/mlflow
       MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlflow/artifacts
     volumes:
       - mlflow-artifacts:/mlflow/artifacts
-    command: >
-      mlflow server
-      --backend-store-uri postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres:5432/mlflow
-      --default-artifact-root /mlflow/artifacts
-      --host 0.0.0.0
-      --port 5000
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - >-
+        pip install psycopg2-binary --quiet &&
+        mlflow server
+        --backend-store-uri "postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD_ENCODED:-airflow}@postgres:5432/mlflow"
+        --default-artifact-root /mlflow/artifacts
+        --host 0.0.0.0
+        --port 5000
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:5000/health')\" 2>/dev/null || exit 1"]
       interval: 30s
-      timeout: 10s
-      retries: 3
+      timeout: 15s
+      retries: 5
+      start_period: 90s
     networks:
       - hull-tactical-net
     restart: unless-stopped
@@ -174,7 +179,7 @@ services:
   # ChromaDB — Vector store for RAG embeddings (port 8000)
   # ---------------------------------------------------------------------------
   chromadb:
-    image: chromadb/chroma:0.4.22
+    image: chromadb/chroma:0.5.20
     container_name: hull-chromadb
     ports:
       - "8000:8000"

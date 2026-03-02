@@ -8,7 +8,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-import streamlit.components.v1 as components
 
 # Make app/utils importable from any page
 _APP_DIR = Path(__file__).parent
@@ -601,92 +600,62 @@ with tab4:
         </div>
         """, unsafe_allow_html=True)
     with col2:
-        components.html(
-            """
-            <div style="background:linear-gradient(135deg,#0f1f3d 0%,#1a2f4e 100%);
-                        border:1px solid #1e3a5f; border-radius:12px;
-                        padding:1.2rem 1.4rem; font-family:sans-serif;
-                        box-shadow:0 4px 16px rgba(0,212,255,0.08);">
+        st.markdown("""
+        <div class='dark-card'>
+            <div class='section-title'>Team</div>
+            <div style='display:flex; flex-direction:column; gap:0.85rem; margin-top:0.5rem;'>
 
-                <!-- Header -->
-                <div style="color:#00d4ff; font-size:0.82rem; font-weight:700;
-                            text-transform:uppercase; letter-spacing:0.1em;
-                            border-bottom:1px solid #1e3a5f; padding-bottom:0.5rem;
-                            margin-bottom:1rem;">Team</div>
-
-                <!-- Pierre Chrislin DORIVAL -->
-                <div style="border-left:3px solid #00d4ff; padding-left:0.75rem; margin-bottom:0.85rem;">
-                    <div style="color:#e2e8f0; font-weight:600; font-size:0.88rem;">
-                        Pierre Chrislin DORIVAL
+                <div style='border-left:3px solid #00d4ff; padding-left:0.75rem;'>
+                    <div style='color:#e2e8f0; font-weight:600;'>Pierre Chrislin DORIVAL</div>
+                    <div style='color:#00d4ff; font-size:0.78rem; font-weight:500; letter-spacing:0.04em;'>
+                        PROJECT LEAD · DATA ENGINEER · MLOPS · DEVOPS · LLMOPS
                     </div>
-                    <div style="color:#00d4ff; font-size:0.71rem; font-weight:500;
-                                letter-spacing:0.04em; margin-top:0.1rem;">
-                        PROJECT LEAD &middot; DATA ENGINEER &middot; MLOPS &middot; DEVOPS &middot; LLMOPS
-                    </div>
-                    <div style="color:#64748b; font-size:0.71rem; margin-top:0.15rem;">
-                        End-to-end ML architecture &middot; MLflow &middot; GitHub Actions &middot; Docker &middot; gRPC inference
+                    <div style='color:#64748b; font-size:0.78rem; margin-top:0.2rem;'>
+                        End-to-end ML architecture · MLflow · GitHub Actions · Docker · gRPC inference
                     </div>
                 </div>
 
-                <!-- Émile STEEVENSON -->
-                <div style="border-left:3px solid #7c3aed; padding-left:0.75rem; margin-bottom:0.85rem;">
-                    <div style="color:#e2e8f0; font-weight:600; font-size:0.88rem;">
-                        &#201;mile STEEVENSON
-                    </div>
-                    <div style="color:#a78bfa; font-size:0.71rem; font-weight:500;
-                                letter-spacing:0.04em; margin-top:0.1rem;">
+                <div style='border-left:3px solid #7c3aed; padding-left:0.75rem;'>
+                    <div style='color:#e2e8f0; font-weight:600;'>Émile STEEVENSON</div>
+                    <div style='color:#a78bfa; font-size:0.78rem; font-weight:500; letter-spacing:0.04em;'>
                         DEVOPS ENGINEER
                     </div>
-                    <div style="color:#64748b; font-size:0.71rem; margin-top:0.15rem;">
-                        Infrastructure &middot; CI/CD automation &middot; Container orchestration &middot; Service reliability
+                    <div style='color:#64748b; font-size:0.78rem; margin-top:0.2rem;'>
+                        Infrastructure · CI/CD automation · Container orchestration · Service reliability
                     </div>
                 </div>
 
-                <!-- Jobed FELIMA -->
-                <div style="border-left:3px solid #059669; padding-left:0.75rem; margin-bottom:0.85rem;">
-                    <div style="color:#e2e8f0; font-weight:600; font-size:0.88rem;">
-                        Jobed FELIMA
+                <div style='border-left:3px solid #059669; padding-left:0.75rem;'>
+                    <div style='color:#e2e8f0; font-weight:600;'>Jobed FELIMA</div>
+                    <div style='color:#34d399; font-size:0.78rem; font-weight:500; letter-spacing:0.04em;'>
+                        DATA SCIENCE · MONETARY ECONOMICS & FINANCE
                     </div>
-                    <div style="color:#34d399; font-size:0.71rem; font-weight:500;
-                                letter-spacing:0.04em; margin-top:0.1rem;">
-                        DATA SCIENCE &middot; MONETARY ECONOMICS &amp; FINANCE
-                    </div>
-                    <div style="color:#64748b; font-size:0.71rem; margin-top:0.15rem;">
-                        Feature engineering &middot; RSI / MACD &middot; Market dynamics &middot; EDA
+                    <div style='color:#64748b; font-size:0.78rem; margin-top:0.2rem;'>
+                        Feature engineering · RSI / MACD · Market dynamics · EDA
                     </div>
                 </div>
 
-                <!-- Sébastien Witchmen ESTANIS -->
-                <div style="border-left:3px solid #d97706; padding-left:0.75rem; margin-bottom:1rem;">
-                    <div style="color:#e2e8f0; font-weight:600; font-size:0.88rem;">
-                        S&#233;bastien Witchmen ESTANIS
+                <div style='border-left:3px solid #d97706; padding-left:0.75rem;'>
+                    <div style='color:#e2e8f0; font-weight:600;'>Sébastien Witchmen ESTANIS</div>
+                    <div style='color:#fbbf24; font-size:0.78rem; font-weight:500; letter-spacing:0.04em;'>
+                        DATA SCIENCE · BANKING & QUANTITATIVE FINANCE
                     </div>
-                    <div style="color:#fbbf24; font-size:0.71rem; font-weight:500;
-                                letter-spacing:0.04em; margin-top:0.1rem;">
-                        DATA SCIENCE &middot; BANKING &amp; QUANTITATIVE FINANCE
-                    </div>
-                    <div style="color:#64748b; font-size:0.71rem; margin-top:0.15rem;">
-                        Monetary policy indicators &middot; Regime features &middot; Return distribution &middot; EDA
-                    </div>
-                </div>
-
-                <!-- Tech Stack -->
-                <div style="border-top:1px solid #1e3a5f; padding-top:0.75rem;">
-                    <div style="color:#00d4ff; font-size:0.82rem; font-weight:700;
-                                text-transform:uppercase; letter-spacing:0.1em;
-                                margin-bottom:0.4rem;">Tech Stack</div>
-                    <div style="color:#64748b; font-size:0.78rem; line-height:1.8;">
-                        LightGBM &middot; XGBoost &middot; CatBoost &middot; RandomForest<br>
-                        MLflow &middot; DagsHub &middot; Streamlit &middot; Plotly<br>
-                        Pandas &middot; NumPy &middot; scikit-learn &middot; Kaggle API
+                    <div style='color:#64748b; font-size:0.78rem; margin-top:0.2rem;'>
+                        Monetary policy indicators · Regime features · Return distribution · EDA
                     </div>
                 </div>
 
             </div>
-            """,
-            height=460,
-            scrolling=False,
-        )
+            <div style='margin-top:1.2rem;'>
+                <div class='section-title'>Tech Stack</div>
+                <div style='color:#64748b;font-size:0.85rem;'>
+                LightGBM · XGBoost · CatBoost · RandomForest<br>
+                MLflow · DagsHub · Streamlit · Plotly<br>
+                Pandas · NumPy · scikit-learn · Kaggle API
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # ── Footer ────────────────────────────────────────────────────────────────────
 st.markdown("---")
