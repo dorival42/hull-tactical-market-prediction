@@ -1,4 +1,4 @@
-"""Hull Tactical Market Prediction — Dark Mode Dashboard."""
+"""Hull Tactical Market Prediction """
 
 import sys
 from pathlib import Path
@@ -246,11 +246,14 @@ n_trading_days   = len(df) if df is not None else (n_samples or 0)
 st.markdown(f"""
 <div class='hero-banner'>
     <div class='hero-title'>Hull Tactical Market Prediction</div>
+    <div class='badge'>Contexte du projet</div>
     <div style='color:#94a3b8; font-size:1.05rem; margin-top:0.5rem;'>
-        Forecasting S&amp;P 500 excess returns with ensemble machine learning — Live on Kaggle Phase 2
+        Forecasting S&amp;P 500 excess returns with ensemble machine learning — Live on Kaggle Phase 2 <\br>
+            Can you time the market? <\br> <\br>
+This Kaggle competition challenges the Efficient Market Hypothesis by building an ML model that predicts S&P 500 returns and dynamically adjusts market exposure — 
+            with the goal of beating the index while keeping risk under control.
     </div>
     <div style='margin-top:1.2rem;'>
-        <span class='badge'>📅 Phase 2 Live</span>
         <span class='badge'>🤖 {n_models_trained} Models Trained</span>
         <span class='badge'>📊 {n_trading_days:,} Trading Days</span>
         <span class='badge'>🔬 {n_feats} Features Selected</span>
