@@ -249,9 +249,9 @@ st.markdown(f"""
     <div class='badge'>Contexte du projet</div>
     <div style='color:#94a3b8; font-size:1.05rem; margin-top:0.5rem;'>
         Forecasting S&amp;P 500 excess returns with ensemble machine learning — Live on Kaggle Phase 2
-    </div> <\br>
+    </div> 
     <div style='color:#94a3b8; font-size:1.05rem; margin-top:0.5rem;'>               
-            Can you time the market? </div><\br> <\br>
+            Can you time the market? </div>
     <div style='color:#94a3b8; font-size:1.05rem; margin-top:0.5rem;'>        
 This Kaggle competition challenges the Efficient Market Hypothesis by building an ML model that predicts S&P 500 returns and dynamically adjusts market exposure — 
             with the goal of beating the index while keeping risk under control.
