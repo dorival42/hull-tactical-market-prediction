@@ -246,7 +246,7 @@ n_trading_days   = len(df) if df is not None else (n_samples or 0)
 st.markdown(f"""
 <div class='hero-banner'>
     <div class='hero-title'>Hull Tactical Market Prediction</div>
-    <div class='badge'>Contexte du projet</div>
+    <div class='badge'>Project context</div>
     <div style='color:#94a3b8; font-size:1.05rem; margin-top:0.5rem;'>
         Forecasting S&amp;P 500 excess returns with ensemble machine learning — Live on Kaggle Phase 2
     </div> 
