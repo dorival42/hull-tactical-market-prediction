@@ -35,9 +35,7 @@ class KaggleDataLoader:
         self.competition = competition or config.get(
             "data.kaggle_dataset", "hull-tactical/hull-tactical-market-prediction"
         )
-        self.cache_dir = Path(
-            cache_dir or config.get("data.cache_dir", "artifacts/data")
-        )
+        self.cache_dir = Path(cache_dir or config.get("data.cache_dir", "artifacts/data"))
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         self._train_df: pd.DataFrame | None = None

@@ -180,9 +180,9 @@ class FeatureEngineer:
         extra_cols: dict[str, pd.Series] = {}
 
         # Basic lagged target
-        extra_cols["feat_lagged_target"]      = df[target_col]
+        extra_cols["feat_lagged_target"] = df[target_col]
         extra_cols["feat_lagged_target_sign"] = (df[target_col] > 0).astype(int)
-        extra_cols["feat_lagged_target_abs"]  = df[target_col].abs()
+        extra_cols["feat_lagged_target_abs"] = df[target_col].abs()
 
         # Multiple lags
         for lag in [1, 2]:
@@ -198,17 +198,17 @@ class FeatureEngineer:
             )
 
         # Volatility features
-        extra_cols["feat_target_volatility_5"]  = df[target_col].rolling(5,  min_periods=1).std()
+        extra_cols["feat_target_volatility_5"] = df[target_col].rolling(5, min_periods=1).std()
         extra_cols["feat_target_volatility_20"] = df[target_col].rolling(20, min_periods=1).std()
 
         # Mean reversion / Z-score (reuse rolling computations)
         rolling_mean = df[target_col].rolling(20, min_periods=1).mean()
-        rolling_std  = df[target_col].rolling(20, min_periods=1).std()
+        rolling_std = df[target_col].rolling(20, min_periods=1).std()
         extra_cols["feat_mean_reversion"] = df[target_col] - rolling_mean
-        extra_cols["feat_target_zscore"]  = (df[target_col] - rolling_mean) / (rolling_std + 1e-8)
+        extra_cols["feat_target_zscore"] = (df[target_col] - rolling_mean) / (rolling_std + 1e-8)
 
         # Autocorrelation / Momentum
-        extra_cols["feat_autocorr"]       = df[target_col] * df[target_col].shift(1)
+        extra_cols["feat_autocorr"] = df[target_col] * df[target_col].shift(1)
         extra_cols["feat_momentum_2days"] = df[target_col] * df[target_col].shift(1)
 
         # Additional lagged features
@@ -233,12 +233,24 @@ class FeatureEngineer:
             self._log(f"Creating rolling features for {col}")
 
             for window in [5, 10, 20, 60]:
-                extra_cols[f"feat_{col}_rolling_mean_{window}d"]     = df[col].rolling(window, min_periods=1).mean()
-                extra_cols[f"feat_{col}_rolling_std_{window}d"]      = df[col].rolling(window, min_periods=1).std()
-                extra_cols[f"feat_{col}_rolling_max_{window}d"]      = df[col].rolling(window, min_periods=1).max()
-                extra_cols[f"feat_{col}_rolling_min_{window}d"]      = df[col].rolling(window, min_periods=1).min()
-                extra_cols[f"feat_{col}_rolling_skew_{window}d"]     = df[col].rolling(window, min_periods=1).skew()
-                extra_cols[f"feat_{col}_rolling_kurtosis_{window}d"] = df[col].rolling(window, min_periods=1).kurt()
+                extra_cols[f"feat_{col}_rolling_mean_{window}d"] = (
+                    df[col].rolling(window, min_periods=1).mean()
+                )
+                extra_cols[f"feat_{col}_rolling_std_{window}d"] = (
+                    df[col].rolling(window, min_periods=1).std()
+                )
+                extra_cols[f"feat_{col}_rolling_max_{window}d"] = (
+                    df[col].rolling(window, min_periods=1).max()
+                )
+                extra_cols[f"feat_{col}_rolling_min_{window}d"] = (
+                    df[col].rolling(window, min_periods=1).min()
+                )
+                extra_cols[f"feat_{col}_rolling_skew_{window}d"] = (
+                    df[col].rolling(window, min_periods=1).skew()
+                )
+                extra_cols[f"feat_{col}_rolling_kurtosis_{window}d"] = (
+                    df[col].rolling(window, min_periods=1).kurt()
+                )
 
         if extra_cols:
             df = pd.concat([df, pd.DataFrame(extra_cols, index=df.index)], axis=1)
@@ -261,9 +273,7 @@ class FeatureEngineer:
             cols = [
                 c
                 for c in df.columns
-                if c.startswith(prefix.upper())
-                and len(c) > 1
-                and c[1:].replace(".", "").isdigit()
+                if c.startswith(prefix.upper()) and len(c) > 1 and c[1:].replace(".", "").isdigit()
             ]
 
             if not cols:
@@ -273,38 +283,38 @@ class FeatureEngineer:
 
             # Basic statistics (computed once, reused below)
             mean_s = df[cols].mean(axis=1)
-            std_s  = df[cols].std(axis=1)
-            max_s  = df[cols].max(axis=1)
-            min_s  = df[cols].min(axis=1)
+            std_s = df[cols].std(axis=1)
+            max_s = df[cols].max(axis=1)
+            min_s = df[cols].min(axis=1)
 
             extra_cols[f"feat_{prefix}_mean"] = mean_s
-            extra_cols[f"feat_{prefix}_std"]  = std_s
-            extra_cols[f"feat_{prefix}_max"]  = max_s
-            extra_cols[f"feat_{prefix}_min"]  = min_s
+            extra_cols[f"feat_{prefix}_std"] = std_s
+            extra_cols[f"feat_{prefix}_max"] = max_s
+            extra_cols[f"feat_{prefix}_min"] = min_s
 
             # Category-specific features (reference local variables, not df)
             if prefix == "v":  # Volatility
-                extra_cols["feat_v_range"]      = max_s - min_s
-                extra_cols["feat_v_median"]     = df[cols].median(axis=1)
-                extra_cols["feat_high_vol"]     = (mean_s > mean_s.quantile(0.75)).astype(int)
-                extra_cols["feat_low_vol"]      = (mean_s < mean_s.quantile(0.25)).astype(int)
+                extra_cols["feat_v_range"] = max_s - min_s
+                extra_cols["feat_v_median"] = df[cols].median(axis=1)
+                extra_cols["feat_high_vol"] = (mean_s > mean_s.quantile(0.75)).astype(int)
+                extra_cols["feat_low_vol"] = (mean_s < mean_s.quantile(0.25)).astype(int)
                 extra_cols["feat_v_percentile"] = mean_s.rolling(252, min_periods=1).rank(pct=True)
-                extra_cols["feat_v_change"]     = mean_s - mean_s.shift(5)
+                extra_cols["feat_v_change"] = mean_s - mean_s.shift(5)
 
             elif prefix == "m":  # Momentum
                 pos_m = (df[cols] > 0).sum(axis=1)
                 neg_m = (df[cols] < 0).sum(axis=1)
-                extra_cols["feat_m_sum"]               = df[cols].sum(axis=1)
-                extra_cols["feat_momentum_strength"]   = df[cols].abs().sum(axis=1)
-                extra_cols["feat_positive_momentum"]   = pos_m
-                extra_cols["feat_negative_momentum"]   = neg_m
-                extra_cols["feat_momentum_balance"]    = pos_m - neg_m
+                extra_cols["feat_m_sum"] = df[cols].sum(axis=1)
+                extra_cols["feat_momentum_strength"] = df[cols].abs().sum(axis=1)
+                extra_cols["feat_positive_momentum"] = pos_m
+                extra_cols["feat_negative_momentum"] = neg_m
+                extra_cols["feat_momentum_balance"] = pos_m - neg_m
                 extra_cols["feat_momentum_consistency"] = (pos_m - neg_m) / (len(cols) + 1e-8)
-                extra_cols["feat_m_change"]            = mean_s - mean_s.shift(5)
+                extra_cols["feat_m_change"] = mean_s - mean_s.shift(5)
 
             elif prefix == "s":  # Sentiment
                 extra_cols["feat_positive_sentiment"] = (mean_s > 0).astype(int)
-                extra_cols["feat_extreme_sentiment"]  = (
+                extra_cols["feat_extreme_sentiment"] = (
                     mean_s.abs() > mean_s.abs().quantile(0.9)
                 ).astype(int)
                 extra_cols["feat_s_change"] = mean_s - mean_s.shift(5)
@@ -353,12 +363,12 @@ class FeatureEngineer:
             # MACD
             ema_12 = df[col].ewm(span=12, adjust=False).mean()
             ema_26 = df[col].ewm(span=26, adjust=False).mean()
-            macd   = ema_12 - ema_26
+            macd = ema_12 - ema_26
             signal = macd.ewm(span=9, adjust=False).mean()
 
-            extra_cols[f"feat_{col}_macd"]        = macd
+            extra_cols[f"feat_{col}_macd"] = macd
             extra_cols[f"feat_{col}_macd_signal"] = signal
-            extra_cols[f"feat_{col}_macd_hist"]   = macd - signal
+            extra_cols[f"feat_{col}_macd_hist"] = macd - signal
 
         if extra_cols:
             df = pd.concat([df, pd.DataFrame(extra_cols, index=df.index)], axis=1)
@@ -373,7 +383,9 @@ class FeatureEngineer:
         # Volatility x Momentum
         if "feat_v_mean" in df.columns and "feat_m_mean" in df.columns:
             extra_cols["feat_vol_momentum_interaction"] = df["feat_v_mean"] * df["feat_m_mean"]
-            extra_cols["feat_vol_momentum_ratio"]       = df["feat_v_mean"] / (df["feat_m_mean"].abs() + 1e-8)
+            extra_cols["feat_vol_momentum_ratio"] = df["feat_v_mean"] / (
+                df["feat_m_mean"].abs() + 1e-8
+            )
 
         # Sentiment x Volatility
         if "feat_s_mean" in df.columns and "feat_v_mean" in df.columns:
@@ -401,26 +413,24 @@ class FeatureEngineer:
         self._log("Creating time features...")
 
         # Approximate day/week/month based on date_id (252 trading days/year)
-        day_of_year   = df["date_id"] % 252
-        week_of_year  = day_of_year // 5
+        day_of_year = df["date_id"] % 252
+        week_of_year = day_of_year // 5
         month_of_year = day_of_year // 21
 
         extra_cols: dict[str, pd.Series] = {
-            "feat_day_of_year":   day_of_year,
-            "feat_week_of_year":  week_of_year,
+            "feat_day_of_year": day_of_year,
+            "feat_week_of_year": week_of_year,
             "feat_month_of_year": month_of_year,
             # Cyclical encoding
-            "feat_day_sin":   np.sin(2 * np.pi * day_of_year   / 252),
-            "feat_day_cos":   np.cos(2 * np.pi * day_of_year   / 252),
+            "feat_day_sin": np.sin(2 * np.pi * day_of_year / 252),
+            "feat_day_cos": np.cos(2 * np.pi * day_of_year / 252),
             "feat_month_sin": np.sin(2 * np.pi * month_of_year / 12),
             "feat_month_cos": np.cos(2 * np.pi * month_of_year / 12),
         }
 
         return pd.concat([df, pd.DataFrame(extra_cols, index=df.index)], axis=1)
 
-    def _handle_missing_values(
-        self, df: pd.DataFrame, nan_threshold: float = 0.30
-    ) -> pd.DataFrame:
+    def _handle_missing_values(self, df: pd.DataFrame, nan_threshold: float = 0.30) -> pd.DataFrame:
         """Handle missing values in the DataFrame."""
         # Drop columns with too many NaN
         nan_ratio = df.isna().mean()
@@ -546,9 +556,7 @@ class FeatureEngineer:
         df_train = df_train.copy()
         df_test = df_test.copy()
 
-        df_train[feature_cols] = self.scaler.fit_transform(
-            df_train[feature_cols].fillna(0)
-        )
+        df_train[feature_cols] = self.scaler.fit_transform(df_train[feature_cols].fillna(0))
         df_test[feature_cols] = self.scaler.transform(df_test[feature_cols].fillna(0))
 
         return df_train, df_test

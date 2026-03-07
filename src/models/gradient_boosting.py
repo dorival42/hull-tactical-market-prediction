@@ -275,9 +275,7 @@ class RandomForestModel(BaseModel):
             self.training_metrics = self._calculate_metrics(y_train.values, y_pred_train)
 
         self.is_fitted = True
-        logger.info(
-            f"RandomForest trained: RMSE={self.training_metrics.get('rmse', 'N/A'):.6f}"
-        )
+        logger.info(f"RandomForest trained: RMSE={self.training_metrics.get('rmse', 'N/A'):.6f}")
         return self
 
     def predict(self, X: pd.DataFrame) -> np.ndarray:

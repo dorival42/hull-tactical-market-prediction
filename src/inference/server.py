@@ -77,9 +77,7 @@ class KaggleInferenceServer:
         model_files = list(self.artifacts_dir.glob("*_final.pkl"))
 
         if not model_files:
-            raise FileNotFoundError(
-                f"No model files found in {self.artifacts_dir}"
-            )
+            raise FileNotFoundError(f"No model files found in {self.artifacts_dir}")
 
         # Prefer ensemble, then lightgbm, then any
         for pattern in ["ensemble", "lightgbm", "xgboost"]:

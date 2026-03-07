@@ -96,9 +96,7 @@ class WalkForwardValidator:
             )
 
         # Aggregate results
-        self.results = self._aggregate_results(
-            fold_results, all_predictions, all_actuals
-        )
+        self.results = self._aggregate_results(fold_results, all_predictions, all_actuals)
 
         return self.results
 
@@ -206,9 +204,7 @@ class WalkForwardValidator:
                 }
             )
 
-        return pd.DataFrame(comparison_results).sort_values(
-            "r2_mean", ascending=False
-        )
+        return pd.DataFrame(comparison_results).sort_values("r2_mean", ascending=False)
 
 
 class TimeSeriesSplit:

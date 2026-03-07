@@ -147,9 +147,7 @@ class BaseModel(ABC):
         """Get training metrics."""
         return self.training_metrics.copy()
 
-    def _calculate_metrics(
-        self, y_true: np.ndarray, y_pred: np.ndarray
-    ) -> dict[str, float]:
+    def _calculate_metrics(self, y_true: np.ndarray, y_pred: np.ndarray) -> dict[str, float]:
         """Calculate regression metrics."""
         return ModelMetrics.calculate_regression_metrics(y_true, y_pred)
 
@@ -187,8 +185,7 @@ class ModelFactory:
         """
         if model_type not in cls._registry:
             raise ValueError(
-                f"Unknown model type: {model_type}. "
-                f"Available: {list(cls._registry.keys())}"
+                f"Unknown model type: {model_type}. " f"Available: {list(cls._registry.keys())}"
             )
 
         if params is None:

@@ -8,7 +8,6 @@ Features:
 - No date cutoff (uses all available data)
 """
 
-
 import numpy as np
 import pandas as pd
 
@@ -57,6 +56,7 @@ class CatBoostImputer:
         """Create a CatBoost regressor instance."""
         try:
             from catboost import CatBoostRegressor
+
             return CatBoostRegressor(
                 iterations=self.iterations,
                 learning_rate=self.learning_rate,
@@ -67,8 +67,7 @@ class CatBoostImputer:
             )
         except ImportError as err:
             raise ImportError(
-                "CatBoost is required for CatBoostImputer. "
-                "Install with: pip install catboost"
+                "CatBoost is required for CatBoostImputer. " "Install with: pip install catboost"
             ) from err
 
     def fit(self, X: pd.DataFrame) -> "CatBoostImputer":
@@ -257,7 +256,9 @@ class DataPreprocessor:
         self._kept_columns = [c for c in df.columns if c not in self._dropped_columns]
 
         self._log(f"   - Total columns: {len(df.columns)}")
-        self._log(f"   - Columns to drop (>{self.nan_threshold*100:.0f}% NaN): {len(self._dropped_columns)}")
+        self._log(
+            f"   - Columns to drop (>{self.nan_threshold*100:.0f}% NaN): {len(self._dropped_columns)}"
+        )
         self._log(f"   - Columns to keep: {len(self._kept_columns)}")
 
         if self._dropped_columns:
@@ -292,9 +293,9 @@ class DataPreprocessor:
                 verbose=False,
             )
             # Only fit on numeric columns with missing values
-            cols_to_impute = df_filtered[numeric_cols].columns[
-                df_filtered[numeric_cols].isna().any()
-            ].tolist()
+            cols_to_impute = (
+                df_filtered[numeric_cols].columns[df_filtered[numeric_cols].isna().any()].tolist()
+            )
 
             if cols_to_impute:
                 self._log(f"   - Columns to impute: {len(cols_to_impute)}")
@@ -383,14 +384,16 @@ class DataPreprocessor:
             nan_count = df[col].isna().sum()
             nan_pct = nan_count / len(df) * 100
 
-            report_data.append({
-                "column": col,
-                "dtype": str(df[col].dtype),
-                "missing_count": nan_count,
-                "missing_pct": nan_pct,
-                "will_drop": nan_pct > self.nan_threshold * 100,
-                "unique_values": df[col].nunique(),
-            })
+            report_data.append(
+                {
+                    "column": col,
+                    "dtype": str(df[col].dtype),
+                    "missing_count": nan_count,
+                    "missing_pct": nan_pct,
+                    "will_drop": nan_pct > self.nan_threshold * 100,
+                    "unique_values": df[col].nunique(),
+                }
+            )
 
         report = pd.DataFrame(report_data)
         report = report.sort_values("missing_pct", ascending=False)
@@ -452,9 +455,7 @@ class AdvancedFeatureSelector:
         corr_matrix = df[feature_cols].corr().abs()
 
         # Find highly correlated pairs
-        upper_tri = corr_matrix.where(
-            np.triu(np.ones(corr_matrix.shape), k=1).astype(bool)
-        )
+        upper_tri = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
 
         # Find columns to drop
         to_drop = set()
@@ -491,10 +492,12 @@ class AdvancedFeatureSelector:
 
         model.fit(X, y, verbose=False)
 
-        importance = pd.DataFrame({
-            "feature": X.columns,
-            "importance": model.feature_importances_,
-        }).sort_values("importance", ascending=False)
+        importance = pd.DataFrame(
+            {
+                "feature": X.columns,
+                "importance": model.feature_importances_,
+            }
+        ).sort_values("importance", ascending=False)
 
         return importance
 
@@ -528,10 +531,12 @@ class AdvancedFeatureSelector:
         X_filled = X.fillna(0)
         mi_scores = mutual_info_regression(X_filled, y, random_state=42)
 
-        importance = pd.DataFrame({
-            "feature": X.columns,
-            "importance": mi_scores,
-        }).sort_values("importance", ascending=False)
+        importance = pd.DataFrame(
+            {
+                "feature": X.columns,
+                "importance": mi_scores,
+            }
+        ).sort_values("importance", ascending=False)
 
         return importance
 
@@ -631,9 +636,9 @@ class AdvancedFeatureSelector:
 
             # Combined score (weighted average)
             importance["importance"] = (
-                importance["catboost"] * 0.5 +
-                importance["correlation"] * 0.25 +
-                importance["mutual_info"] * 0.25
+                importance["catboost"] * 0.5
+                + importance["correlation"] * 0.25
+                + importance["mutual_info"] * 0.25
             )
 
             importance = importance.sort_values("importance", ascending=False)
@@ -647,7 +652,7 @@ class AdvancedFeatureSelector:
 
         # Filter to only available columns
         available_features = [f for f in importance["feature"] if f in candidate_cols]
-        self.selected_features = available_features[:self.n_features]
+        self.selected_features = available_features[: self.n_features]
 
         self._log(f"   Selected {len(self.selected_features)} features")
 

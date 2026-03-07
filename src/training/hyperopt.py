@@ -90,9 +90,7 @@ class HyperparameterOptimizer:
 
         for param_name, param_spec in space.items():
             if param_spec[0] == "int":
-                params[param_name] = trial.suggest_int(
-                    param_name, param_spec[1], param_spec[2]
-                )
+                params[param_name] = trial.suggest_int(param_name, param_spec[1], param_spec[2])
             elif param_spec[0] == "float":
                 if len(param_spec) > 3 and param_spec[3] == "log":
                     params[param_name] = trial.suggest_float(
@@ -103,9 +101,7 @@ class HyperparameterOptimizer:
                         param_name, param_spec[1], param_spec[2]
                     )
             elif param_spec[0] == "categorical":
-                params[param_name] = trial.suggest_categorical(
-                    param_name, param_spec[1]
-                )
+                params[param_name] = trial.suggest_categorical(param_name, param_spec[1])
 
         # Add fixed params
         config = Config()

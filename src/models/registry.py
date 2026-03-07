@@ -95,9 +95,7 @@ class ModelRegistry:
         # Add tags
         if tags:
             for key, value in tags.items():
-                self.client.set_model_version_tag(
-                    model_name, result.version, key, value
-                )
+                self.client.set_model_version_tag(model_name, result.version, key, value)
 
         logger.info(f"Registered model {model_name} version {result.version}")
         return result.version
@@ -119,9 +117,7 @@ class ModelRegistry:
 
         # Log feature names
         if model.feature_names:
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".txt", delete=False
-            ) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
                 f.write("\n".join(model.feature_names))
                 self.mlflow.log_artifact(f.name, artifact_path)
 
@@ -229,9 +225,7 @@ class ModelRegistry:
         self.client.delete_model_version(model_name, version)
         logger.info(f"Deleted {model_name} v{version}")
 
-    def get_model_version_info(
-        self, model_name: str, version: str
-    ) -> dict[str, Any]:
+    def get_model_version_info(self, model_name: str, version: str) -> dict[str, Any]:
         """
         Get information about a model version.
 

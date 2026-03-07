@@ -26,9 +26,7 @@ def sample_train_data():
     df = pd.DataFrame(data)
 
     # Calculate target
-    df["market_forward_excess_returns"] = (
-        df["forward_returns"] - df["risk_free_rate"] / 252
-    )
+    df["market_forward_excess_returns"] = df["forward_returns"] - df["risk_free_rate"] / 252
 
     return df
 
@@ -87,8 +85,6 @@ def sample_predictions():
     n_samples = 100
 
     return np.random.randn(n_samples) * 0.01
-
-
 
 
 @pytest.fixture

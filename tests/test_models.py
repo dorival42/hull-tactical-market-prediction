@@ -35,9 +35,7 @@ class TestLightGBMModel:
         assert model.feature_names is not None
         assert len(model.feature_names) == sample_features.shape[1]
 
-    def test_fit_with_validation(
-        self, sample_features, sample_target, model_params_lightgbm
-    ):
+    def test_fit_with_validation(self, sample_features, sample_target, model_params_lightgbm):
         """Test model fitting with validation set."""
         # Split data
         split = int(len(sample_features) * 0.8)
@@ -62,9 +60,7 @@ class TestLightGBMModel:
         assert len(predictions) == len(sample_features)
         assert not np.isnan(predictions).any()
 
-    def test_get_feature_importance(
-        self, sample_features, sample_target, model_params_lightgbm
-    ):
+    def test_get_feature_importance(self, sample_features, sample_target, model_params_lightgbm):
         """Test feature importance."""
         model = LightGBMModel(params=model_params_lightgbm)
         model.fit(sample_features, sample_target)
@@ -181,9 +177,7 @@ class TestEnsembleModel:
         assert ensemble.is_fitted
         assert len(predictions) == len(sample_features)
 
-    def test_get_feature_importance(
-        self, sample_features, sample_target, model_params_lightgbm
-    ):
+    def test_get_feature_importance(self, sample_features, sample_target, model_params_lightgbm):
         """Test aggregated feature importance."""
         ensemble = EnsembleModel()
         model = LightGBMModel(params=model_params_lightgbm)

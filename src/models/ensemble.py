@@ -1,6 +1,5 @@
 """Ensemble model implementations."""
 
-
 import numpy as np
 import pandas as pd
 
@@ -126,9 +125,7 @@ class EnsembleModel(BaseModel):
         if X_val is not None and y_val is not None:
             y_pred = self.predict(X_val)
             self.training_metrics = self._calculate_metrics(y_val.values, y_pred)
-            logger.info(
-                f"Ensemble RMSE: {self.training_metrics.get('rmse', 'N/A'):.6f}"
-            )
+            logger.info(f"Ensemble RMSE: {self.training_metrics.get('rmse', 'N/A'):.6f}")
 
         self.is_fitted = True
         return self
