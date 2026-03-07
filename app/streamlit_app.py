@@ -500,7 +500,7 @@ with tab2:
 
     styled = results_df.style\
         .format({"RMSE": "{:.6f}", "MAE": "{:.6f}", "R²": "{:+.4f}", "Dir. Acc. %": "{:.2f}%"})\
-        .applymap(color_r2, subset=["R²"])\
+        .map(color_r2, subset=["R²"])\
         .highlight_min(subset=["RMSE", "MAE"], color="#0f2d1a")\
         .highlight_max(subset=["Dir. Acc. %"], color="#0f2d1a")
     st.dataframe(styled, use_container_width=True, hide_index=True)
@@ -573,7 +573,7 @@ with tab3:
         ("⚙️ Feature Eng.", "159 new features\n248 total columns\nRolling, RSI, MACD…"),
         ("🧹 Preprocessing", f"0 columns dropped\n>{_nan_pct}% NaN threshold\nMedian imputation"),
         ("🎯 Selection",     f"68 correlated removed\n176 candidates\n{n_feats} final features"),
-        ("🤖 Training",      f"{n_models_trained} models trained\n{n_samples:,} train samples\n{_n_val:,} val samples"),
+        ("🤖 Training",      f"{n_models_trained} models trained\n{n_samples:,} train samples\n{_n_val:,} val samples" if isinstance(_n_val, int) else f"{n_models_trained} models trained\n{n_samples:,} train samples\n— val samples"),
     ]
     for col, (title, desc) in zip(pipeline_cols, pipeline_steps):
         with col:

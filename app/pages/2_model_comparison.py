@@ -239,7 +239,9 @@ np.random.seed(42)
 n_folds = 5
 wf_fig = go.Figure()
 for model in ["LightGBM", "XGBoost", "CatBoost", "RandomForest", "Ensemble"]:
-    base = REAL_RESULTS[model]["rmse"]
+    base = REAL_RESULTS[model].get("rmse")
+    if base is None:
+        continue
     noise = np.random.randn(n_folds) * 0.00015
     fold_rmse = base + noise + np.linspace(0.0001, -0.0001, n_folds)
     wf_fig.add_trace(go.Scatter(

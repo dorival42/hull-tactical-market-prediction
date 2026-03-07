@@ -390,7 +390,7 @@ with col_mlf:
     </tr>
     <tr style='border-bottom:1px solid #1e3a5f;'>
         <td style='color:#94a3b8;padding:.4rem;font-size:.83rem;'>Ensemble RMSE</td>
-        <td style='color:#10b981;padding:.4rem;font-size:.83rem;font-weight:700;'>{f"{_ens_rmse:.6f}"}</td>
+        <td style='color:#10b981;padding:.4rem;font-size:.83rem;font-weight:700;'>{f"{_ens_rmse:.6f}" if _ens_rmse is not None else "—"}</td>
     </tr>
     <tr>
         <td style='color:#94a3b8;padding:.4rem;font-size:.83rem;'>Last Training</td>
@@ -406,7 +406,7 @@ with col_alrt:
 
     _lgb_r2  = (_metrics.get("LightGBM")  or {}).get("r2")
     _lgb_acc = (_metrics.get("LightGBM")  or {}).get("dir_acc")
-    _n_sel   = preproc_info.get("n_features", 100) if (_pi := load_preprocessing_info()) else 100
+    _pi      = load_preprocessing_info()
     _n_sel   = _pi.get("n_features", 100)
 
     alerts = [
