@@ -110,9 +110,10 @@ col_r, col_d = st.columns(2)
 with col_r:
     fig_rmse = go.Figure()
     bar_colors = [COLORS[m] for m in MODELS]
+    rmse_vals = [REAL_RESULTS[m]["rmse"] for m in MODELS]
     fig_rmse.add_trace(go.Bar(
         x=MODELS,
-        y=[REAL_RESULTS[m]["rmse"] for m in MODELS],
+        y=rmse_vals,
         marker=dict(color=bar_colors, line=dict(width=1, color="#1e3a5f")),
         text=[_f(REAL_RESULTS[m]['rmse'], ".5f") for m in MODELS],
         textposition="outside", textfont=dict(color="#e2e8f0", size=11),
@@ -121,44 +122,52 @@ with col_r:
     if best_rmse_val is not None:
         fig_rmse.add_hline(y=best_rmse_val, line_dash="dot", line_color="#10b981",
                            annotation_text=f"Best: {_f(best_rmse_val)}", annotation_font_color="#10b981")
+    _rmse_spread = max(rmse_vals) - min(rmse_vals)
+    _rmse_pad = max(_rmse_spread * 2, 0.00005)
     fig_rmse.update_layout(**PLOTLY_DARK, height=320, showlegend=False,
                            title="RMSE — Lower is Better",
                            xaxis_title="Model", yaxis_title="RMSE",
-                           yaxis_range=[0.01095, 0.01130])
+                           yaxis_range=[min(rmse_vals) - _rmse_pad, max(rmse_vals) + _rmse_pad])
     st.plotly_chart(fig_rmse, use_container_width=True)
 
 with col_d:
     fig_acc = go.Figure()
+    acc_vals = [REAL_RESULTS[m]["dir_acc"] for m in MODELS]
     fig_acc.add_trace(go.Bar(
         x=MODELS,
-        y=[REAL_RESULTS[m]["dir_acc"] for m in MODELS],
+        y=acc_vals,
         marker=dict(color=bar_colors, line=dict(width=1, color="#1e3a5f")),
         text=[_f(REAL_RESULTS[m]['dir_acc'], ".2f") + "%" for m in MODELS],
         textposition="outside", textfont=dict(color="#e2e8f0", size=11),
     ))
     fig_acc.add_hline(y=50, line_dash="dot", line_color="#ef4444",
                       annotation_text="Random baseline 50%", annotation_font_color="#ef4444")
+    _acc_spread = max(acc_vals) - min(acc_vals)
+    _acc_pad = max(_acc_spread * 2, 1.0)
     fig_acc.update_layout(**PLOTLY_DARK, height=320, showlegend=False,
                           title="Directional Accuracy — Higher is Better",
                           xaxis_title="Model", yaxis_title="Dir. Accuracy (%)",
-                          yaxis_range=[46, 52])
+                          yaxis_range=[min(acc_vals) - _acc_pad, max(acc_vals) + _acc_pad])
     st.plotly_chart(fig_acc, use_container_width=True)
 
 col_mae, col_r2 = st.columns(2)
 
 with col_mae:
     fig_mae = go.Figure()
+    mae_vals = [REAL_RESULTS[m]["mae"] for m in MODELS]
     fig_mae.add_trace(go.Bar(
         x=MODELS,
-        y=[REAL_RESULTS[m]["mae"] for m in MODELS],
+        y=mae_vals,
         marker=dict(color=bar_colors, line=dict(width=1, color="#1e3a5f")),
         text=[_f(REAL_RESULTS[m]['mae'], ".5f") for m in MODELS],
         textposition="outside", textfont=dict(color="#e2e8f0", size=11),
     ))
+    _mae_spread = max(mae_vals) - min(mae_vals)
+    _mae_pad = max(_mae_spread * 2, 0.00005)
     fig_mae.update_layout(**PLOTLY_DARK, height=280, showlegend=False,
                           title="MAE — Lower is Better",
                           xaxis_title="Model", yaxis_title="MAE",
-                          yaxis_range=[0.0078, 0.0083])
+                          yaxis_range=[min(mae_vals) - _mae_pad, max(mae_vals) + _mae_pad])
     st.plotly_chart(fig_mae, use_container_width=True)
 
 with col_r2:
@@ -310,11 +319,12 @@ with col_rec1:
     """, unsafe_allow_html=True)
 
 with col_rec2:
+    _xgb = REAL_RESULTS.get("XGBoost", {})
     st.markdown(f"""
     <div class='model-card'>
         <div style='font-size:.8rem;color:#94a3b8;'>⚡ BEST SPEED/ACCURACY</div>
         <div style='font-size:1.6rem;font-weight:800;color:#f59e0b;margin:.4rem 0;'>XGBoost</div>
-        <div style='color:#e2e8f0;'>RMSE: <b>0.011226</b> &nbsp;|&nbsp; Train Time: <b>22s</b> &nbsp;|&nbsp; Dir. Acc.: <b>49.27%</b></div>
+        <div style='color:#e2e8f0;'>RMSE: <b>{_f(_xgb.get('rmse'))}</b> &nbsp;|&nbsp; Train Time: <b>{_xgb.get('train_time') or '—'}s</b> &nbsp;|&nbsp; Dir. Acc.: <b>{_f(_xgb.get('dir_acc'), '.2f')}%</b></div>
         <div style='color:#94a3b8;font-size:.82rem;margin-top:.5rem;'>Fastest single-model training. Best choice for rapid experimentation cycles.</div>
     </div>
     """, unsafe_allow_html=True)

@@ -17,7 +17,7 @@ mlflow:
 
 preprocessing:
   nan_threshold: 0.30
-  use_catboost_imputation: true
+  use_catboost_imputation: false
   catboost_imputation:
     iterations: 100
     learning_rate: 0.1
@@ -25,7 +25,7 @@ preprocessing:
     verbose: 0
   feature_selection:
     method: combined
-    n_features: 150
+    n_features: 100
     importance_weight: 0.5
     correlation_weight: 0.25
     mutual_info_weight: 0.25

@@ -1,40 +1,41 @@
 # =============================================================================
 # Extra pip packages installed on top of apache/airflow:2.8.1
 # Install inside the container via Dockerfile.airflow
+# Pinned with ~= (compatible release) for reproducibility — MED-13
 # =============================================================================
 
 # --- Airflow providers ---
-apache-airflow-providers-http>=4.7.0        # HttpSensor / SimpleHttpOperator
+apache-airflow-providers-http~=4.10.0       # HttpSensor / SimpleHttpOperator
 
 # --- Data fetching ---
-yfinance>=0.2.36                            # S&P 500 OHLCV data
-newsapi-python>=0.2.7                       # NewsAPI client
-requests>=2.31.0
+yfinance~=0.2.40                            # S&P 500 OHLCV data
+newsapi-python~=0.2.7                       # NewsAPI client
+requests~=2.31.0
 
-# --- Core ML stack (mirrors requirements.txt) ---
-numpy>=1.24.0,<2.0.0
-pandas>=2.0.0
-scikit-learn>=1.3.0
-lightgbm>=4.0.0
-xgboost>=2.0.0
-catboost>=1.2.0
+# --- Core ML stack (must match requirements.txt to avoid version drift) ---
+numpy~=1.26.0
+pandas~=2.1.0
+scikit-learn~=1.4.0
+lightgbm~=4.3.0
+xgboost~=2.0.0
+catboost~=1.2.0
 
 # --- MLflow ---
-mlflow>=2.9.0
-psycopg2-binary>=2.9.0                      # PostgreSQL driver for MLflow backend
+mlflow~=2.11.0
+psycopg2-binary~=2.9.0                     # PostgreSQL driver for MLflow backend
 
 # --- ChromaDB + embeddings ---
-chromadb>=0.4.22
-sentence-transformers>=2.3.1               # HuggingFace embeddings (all-MiniLM-L6-v2)
-torch>=2.1.0                               # Required by sentence-transformers (CPU-only)
+chromadb~=0.5.20
+sentence-transformers~=2.7.0               # HuggingFace embeddings (all-MiniLM-L6-v2)
+torch~=2.2.0                               # Required by sentence-transformers (CPU-only)
 
 # --- Storage ---
-pyarrow>=14.0.0                             # Parquet read/write
+pyarrow~=15.0.0                            # Parquet read/write
 
 # --- Config & utilities ---
-python-dotenv>=1.0.0
-omegaconf>=2.3.0
-pyyaml>=6.0
-tqdm>=4.66.0
-joblib>=1.3.0
-scipy>=1.11.0
+python-dotenv~=1.0.0
+omegaconf~=2.3.0
+pyyaml~=6.0
+tqdm~=4.66.0
+joblib~=1.3.0
+scipy~=1.12.0

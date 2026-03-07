@@ -246,6 +246,46 @@ def save_preprocessing_config(config: Dict[str, Any]) -> None:
     raise OSError("Impossible d'écrire la configuration (ni artifacts/ ni /tmp/ accessibles).")
 
 
+# ── Model loader ─────────────────────────────────────────────────────────────
+
+_MODEL_FILE_MAP: Dict[str, str] = {
+    "LightGBM":     "lightgbm_final.pkl",
+    "XGBoost":      "xgboost_final.pkl",
+    "CatBoost":     "catboost_final.pkl",
+    "RandomForest": "random_forest_final.pkl",
+    "Ensemble":     "ensemble_final.pkl",
+}
+
+
+@st.cache_resource(show_spinner=False)
+def load_model_pkl(model_name: str):
+    """
+    Load a trained model from its pkl artifact.
+
+    Returns a dict with keys:
+        - ``model``: the underlying sklearn/lgbm/xgb/catboost object (has .predict())
+        - ``feature_names``: list of feature columns expected by the model
+
+    Returns None if the file does not exist.
+    """
+    import pickle
+
+    filename = _MODEL_FILE_MAP.get(model_name)
+    if filename is None:
+        return None
+    path = ARTIFACTS_DIR / filename
+    if not path.exists():
+        return None
+    try:
+        with open(path, "rb") as f:
+            data = pickle.load(f)
+        # Individual models: {"model": ..., "feature_names": ...}
+        # Ensemble: {"models": [...], "feature_names": ...}
+        return data
+    except Exception:
+        return None
+
+
 # ── Convenience helpers ──────────────────────────────────────────────────────
 
 def best_model(metrics: Dict[str, Dict[str, Any]], by: str = "rmse") -> str:

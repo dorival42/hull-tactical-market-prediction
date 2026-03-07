@@ -27,6 +27,8 @@ x-airflow-common: &airflow-common
     KAGGLE_USERNAME: ${KAGGLE_USERNAME}
     KAGGLE_KEY: ${KAGGLE_KEY}
     MLFLOW_TRACKING_URI: http://mlflow:5000
+    # Allow the MLflow guard task to accept the local Docker MLflow URI
+    ALLOW_LOCAL_MLFLOW: "true"
     CHROMADB_HOST: chromadb
     CHROMADB_PORT: "8000"
     NEWS_API_KEY: ${NEWS_API_KEY}
@@ -98,6 +100,10 @@ services:
         airflow variables set MLFLOW_TRACKING_URI "http://mlflow:5000"
         airflow variables set CHROMADB_HOST "chromadb"
         airflow variables set CHROMADB_PORT "8000"
+        # Auto-unpause all DAGs so the pipeline runs without manual intervention (CRIT-1)
+        airflow dags unpause dag_data_pipeline    || true
+        airflow dags unpause dag_model_retraining || true
+        airflow dags unpause dag_rag_update       || true
         echo "✅ Airflow init complete."
     restart: on-failure
 
@@ -128,6 +134,14 @@ services:
     <<: *airflow-common
     container_name: hull-airflow-scheduler
     command: scheduler
+    # Resource limits prevent runaway training tasks from starving other services (MED-20)
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 10G
+        reservations:
+          memory: 2G
     healthcheck:
       test: ["CMD", "airflow", "jobs", "check", "--job-type", "SchedulerJob", "--limit", "1"]
       interval: 30s

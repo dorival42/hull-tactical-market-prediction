@@ -31,8 +31,8 @@ def parse_args():
     parser.add_argument(
         "--n-features",
         type=int,
-        default=150,
-        help="Number of features to select (default: 150)",
+        default=100,
+        help="Number of features to select (default: 100)",
     )
 
     parser.add_argument(
@@ -72,14 +72,14 @@ def parse_args():
     parser.add_argument(
         "--use-catboost-imputation",
         action="store_true",
-        default=True,
-        help="Use CatBoost for imputing missing values (default: True)",
+        default=False,
+        help="Use CatBoost for imputing missing values (default: False, uses median)",
     )
 
     parser.add_argument(
         "--no-catboost-imputation",
         action="store_true",
-        help="Disable CatBoost imputation, use median instead",
+        help="Disable CatBoost imputation, use median instead (default behaviour)",
     )
 
     parser.add_argument(
@@ -170,7 +170,7 @@ def main():
     logger.info("\n3. Training models...")
 
     if args.model == "all":
-        # Train all models
+        # Train all individual models
         results = trainer.train_all_models(register_best=args.register)
 
         # Find best model (by R2 score)
@@ -194,8 +194,19 @@ def main():
 
         logger.info(f"\nBest model: {best_model_type.upper()}")
 
-        # Save best model
+        # Save best individual model
         trainer.save_artifacts(best_model, args.output_dir)
+
+        # Also train and save ensemble
+        logger.info("\n" + "=" * 80)
+        logger.info("TRAINING ENSEMBLE")
+        logger.info("=" * 80)
+        try:
+            ensemble, ens_metrics = trainer.train_ensemble()
+            trainer.save_artifacts(ensemble, args.output_dir)
+            logger.info(f"  Ensemble RMSE: {ens_metrics.get('rmse', 'N/A'):.6f}")
+        except Exception as exc:
+            logger.warning(f"Ensemble training failed: {exc}")
 
     elif args.model == "ensemble":
         # Train ensemble

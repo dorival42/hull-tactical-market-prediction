@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 # Connection
 # ---------------------------------------------------------------------------
 MLFLOW_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
-EXPERIMENT_NAME = "hull-tactical-airflow"
+# Same experiment name as the manual training pipeline so all runs are comparable
+EXPERIMENT_NAME = "hull-tactical-experiments"
 
 
 def get_mlflow_client():
@@ -141,7 +142,20 @@ def register_model_if_better(
 
         if prod_versions:
             prod_run = client.get_run(prod_versions[0].run_id)
-            prod_metric = prod_run.data.metrics.get(metric_name)
+            prod_metrics = prod_run.data.metrics
+
+            # Direct key lookup first; fallback to any key ending with "_<metric_name>"
+            # (covers the case where metrics were logged as e.g. "lightgbm_rmse").
+            prod_metric = prod_metrics.get(metric_name)
+            if prod_metric is None:
+                suffixed = [v for k, v in prod_metrics.items() if k.endswith(f"_{metric_name}")]
+                if suffixed:
+                    prod_metric = min(suffixed) if lower_is_better else max(suffixed)
+                    logger.info(
+                        "Direct key '%s' not found; resolved from suffixed keys → %.6f",
+                        metric_name, prod_metric,
+                    )
+
             if prod_metric is not None:
                 if lower_is_better:
                     should_promote = new_metric_value < prod_metric
@@ -150,6 +164,11 @@ def register_model_if_better(
                 logger.info(
                     "Comparison: new=%s=%.6f vs prod=%.6f → promote=%s",
                     metric_name, new_metric_value, prod_metric, should_promote,
+                )
+            else:
+                logger.warning(
+                    "Could not retrieve '%s' from Production run %s — promoting by default.",
+                    metric_name, prod_versions[0].run_id,
                 )
 
         if should_promote:

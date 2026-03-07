@@ -39,9 +39,9 @@ class MLflowTrainer:
         self,
         experiment_name: str | None = None,
         tracking_uri: str | None = None,
-        n_features: int = 150,
+        n_features: int = 100,
         nan_threshold: float = 0.30,
-        use_catboost_imputation: bool = True,
+        use_catboost_imputation: bool = False,
         feature_selection_method: str = "combined",
     ):
         """
@@ -126,6 +126,11 @@ class MLflowTrainer:
         Returns:
             Prepared DataFrame.
         """
+        # Store preprocessing params for MLflow logging in train_model()
+        self._warmup_period = warmup_period
+        self._start_row_pct = start_row_pct
+        self._end_row_pct = end_row_pct
+
         # Override n_features if provided
         if n_features is not None:
             self.n_features = n_features
@@ -256,6 +261,16 @@ class MLflowTrainer:
                     self._mlflow.log_param("feature_selection_method", self.feature_selection_method)
                     self._mlflow.log_param("date_cutoff", "None (all data)")
 
+                    # Log training split parameters
+                    self._mlflow.log_param("test_size", test_size)
+                    self._mlflow.log_param("random_state", self.config.get("training.random_state", 42))
+                    if getattr(self, "_warmup_period", None) is not None:
+                        self._mlflow.log_param("warmup_period", self._warmup_period)
+                    if getattr(self, "_start_row_pct", None) is not None:
+                        self._mlflow.log_param("start_row_pct", self._start_row_pct)
+                    if getattr(self, "_end_row_pct", None) is not None:
+                        self._mlflow.log_param("end_row_pct", self._end_row_pct)
+
                     # Log model parameters
                     self._mlflow.log_params(model.params)
                     self._mlflow.log_param("n_features", len(self.feature_cols))
@@ -285,10 +300,14 @@ class MLflowTrainer:
                         json.dump(self.feature_cols, f)
                     self._mlflow.log_artifact("/tmp/selected_features.json")
 
-                    # Log model
+                    # Log model with signature for schema enforcement
+                    from mlflow.models import infer_signature
+                    signature = infer_signature(X_val, y_pred)
                     self._mlflow.sklearn.log_model(
                         model.model,
                         artifact_path="model",
+                        signature=signature,
+                        input_example=X_val.head(5),
                         registered_model_name=f"hull-tactical-{model_type}" if register_model else None,
                     )
 
@@ -425,9 +444,12 @@ class MLflowTrainer:
                 with self._mlflow.start_run(run_name=run_name) as run:
                     self._mlflow.log_param("ensemble_method", ensemble.method)
                     self._mlflow.log_param("n_models", len(ensemble.models))
+                    self._mlflow.log_param("ensemble_weights", str(getattr(ensemble, "weights", {})))
                     self._mlflow.log_param("nan_threshold", self.nan_threshold)
                     self._mlflow.log_param("catboost_imputation", self.use_catboost_imputation)
                     self._mlflow.log_param("feature_selection_method", self.feature_selection_method)
+                    self._mlflow.log_param("test_size", self.config.get("training.test_size", 0.2))
+                    self._mlflow.log_param("random_state", self.config.get("training.random_state", 42))
 
                     # Train ensemble
                     ensemble.fit(X_train, y_train, X_val, y_val)
@@ -458,6 +480,9 @@ class MLflowTrainer:
             y_pred = ensemble.predict(X_val)
             pred_metrics = ModelMetrics.calculate_all_metrics(y_val.values, y_pred)
 
+        # ensemble.training_metrics comes from _calculate_metrics (basic regression only);
+        # pred_metrics from ModelMetrics.calculate_all_metrics includes directional_accuracy.
+        # Merge with pred_metrics taking precedence so directional_accuracy is always present.
         all_metrics = {**ensemble.training_metrics, **pred_metrics, "train_time_seconds": train_time}
 
         logger.info(f"  RMSE: {all_metrics.get('rmse', 'N/A'):.6f}")
@@ -465,8 +490,9 @@ class MLflowTrainer:
         logger.info(f"  Directional Accuracy: {all_metrics.get('directional_accuracy', 'N/A'):.2f}%")
         logger.info(f"  Training Time: {train_time}s")
 
-        # Persist metrics to artifacts/
+        # Persist metrics and feature importance to artifacts/
         self._save_metrics_json("ensemble", all_metrics)
+        self._save_feature_importance_json(ensemble)
 
         return ensemble, all_metrics
 
@@ -551,6 +577,7 @@ class MLflowTrainer:
             "rmse":              metrics.get("rmse", None),
             "mae":               metrics.get("mae", None),
             "r2":                metrics.get("r2", None),
+            "mape":              metrics.get("mape", None),
             "dir_acc":           metrics.get("directional_accuracy", None),
             "train_time":        metrics.get("train_time_seconds", None),
             "timestamp":         datetime.now().isoformat(timespec="seconds"),
@@ -620,6 +647,12 @@ class MLflowTrainer:
         model_path = output_path / f"{model.name.lower()}_final.pkl"
         model.save(str(model_path))
         logger.info(f"Model saved: {model_path}")
+
+        # Serialize fitted DataPipeline for reproducible inference
+        import joblib
+        pipeline_path = output_path / "pipeline.joblib"
+        joblib.dump(self.data_pipeline, str(pipeline_path))
+        logger.info(f"DataPipeline saved: {pipeline_path}")
 
         # Save feature list
         self.data_pipeline.save(str(output_path))

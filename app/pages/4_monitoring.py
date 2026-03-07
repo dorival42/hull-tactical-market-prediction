@@ -40,11 +40,11 @@ PLOTLY_DARK = dict(
     font=dict(color="#e2e8f0"),
 )
 
-from utils.artifacts import load_metrics, load_preprocessing_info, load_train_data  # noqa: E402
+from utils.artifacts import load_metrics, load_preprocessing_info, load_train_data, load_model_pkl  # noqa: E402
 
 # Load metrics dynamically
 _metrics = load_metrics()
-_ens_rmse = (_metrics.get("Ensemble") or {}).get("rmse") or 0.011123
+_ens_rmse = (_metrics.get("Ensemble") or {}).get("rmse")
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 st.sidebar.header("Monitoring Settings")
@@ -63,9 +63,53 @@ if df_full is not None and "market_forward_excess_returns" in df_full.columns:
 else:
     raw_ret = np.random.randn(n_days) * 0.0113
 
-# Strategy: allocation-based returns (signal × market)
-np.random.seed(42)
-predictions = raw_ret * 0.25 + np.random.randn(n_days) * 0.0053
+# Strategy: allocation-based returns using real model predictions
+# Try Ensemble → LightGBM → simulated fallback
+def _load_real_predictions(df_src, n: int) -> np.ndarray | None:
+    """Return predictions array aligned to the last n rows of df_src, or None."""
+    for model_name in ["Ensemble", "LightGBM", "XGBoost", "CatBoost", "RandomForest"]:
+        md = load_model_pkl(model_name)
+        if md is None:
+            continue
+        try:
+            if "models" in md:
+                weights_map = md.get("weights", {})
+                sub_preds, sub_weights = [], []
+                for sub in md["models"]:
+                    feat_names = sub.get("feature_names") or md.get("feature_names", [])
+                    avail = [f for f in feat_names if f in df_src.columns]
+                    if not avail:
+                        continue
+                    X = df_src[avail].fillna(0)
+                    sub_preds.append(sub["model"].predict(X))
+                    sub_weights.append(weights_map.get(sub["name"], 1.0))
+                if not sub_preds:
+                    continue
+                w = np.array(sub_weights); w = w / w.sum()
+                preds_full = np.average(np.array(sub_preds), axis=0, weights=w)
+            else:
+                feat_names = md.get("feature_names") or []
+                avail = [f for f in feat_names if f in df_src.columns]
+                if not avail:
+                    continue
+                preds_full = md["model"].predict(df_src[avail].fillna(0))
+            return preds_full[-n:]
+        except Exception:
+            continue
+    return None
+
+_real_preds = None
+if df_full is not None and len(df_full) >= n_days:
+    _df_for_preds = df_full.tail(n_days).reset_index(drop=True)
+    _real_preds = _load_real_predictions(_df_for_preds, n_days)
+
+if _real_preds is not None:
+    predictions = _real_preds
+else:
+    # Fallback: simple smoothed approximation (clearly labelled in UI)
+    np.random.seed(42)
+    predictions = raw_ret * 0.25 + np.random.randn(n_days) * 0.0053
+
 allocations = np.clip(1.0 + predictions * 80, 0.0, 2.0)
 strategy_ret = allocations * raw_ret          # strategy daily return
 benchmark_ret = raw_ret                        # buy-and-hold benchmark
@@ -234,8 +278,9 @@ with col_rmse:
         fill="tozeroy", fillcolor="rgba(245,158,11,0.07)",
         name=f"{n_window}d Rolling RMSE",
     ))
-    fig_rmse.add_hline(y=_ens_rmse, line_dash="dash", line_color="#10b981",
-                       annotation_text=f"Ensemble RMSE {_ens_rmse:.5f}", annotation_font_color="#10b981")
+    if _ens_rmse is not None:
+        fig_rmse.add_hline(y=_ens_rmse, line_dash="dash", line_color="#10b981",
+                           annotation_text=f"Ensemble RMSE {_ens_rmse:.5f}", annotation_font_color="#10b981")
     fig_rmse.update_layout(**PLOTLY_DARK, height=260, showlegend=False,
                            title=f"{n_window}-Day Rolling RMSE",
                            xaxis_title="Date", yaxis_title="RMSE")

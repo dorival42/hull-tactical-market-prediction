@@ -33,7 +33,7 @@ class KaggleDataLoader:
         """
         config = Config()
         self.competition = competition or config.get(
-            "data.kaggle_dataset", "hull-tactical/hull-tactical-index-tracking"
+            "data.kaggle_dataset", "hull-tactical/hull-tactical-market-prediction"
         )
         self.cache_dir = Path(
             cache_dir or config.get("data.cache_dir", "artifacts/data")

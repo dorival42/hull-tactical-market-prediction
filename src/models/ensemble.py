@@ -196,16 +196,12 @@ class EnsembleModel(BaseModel):
 
         combined = pd.concat(all_importance, ignore_index=True)
 
-        # Aggregate by weighted average
-        aggregated = (
-            combined.groupby("feature")
-            .apply(
-                lambda x: np.average(x["importance"], weights=x["weight"])
-            )
-            .reset_index()
-        )
-        aggregated.columns = ["feature", "importance"]
-        aggregated = aggregated.sort_values("importance", ascending=False)
+        # Aggregate by weighted average — explicit loop avoids deprecated groupby.apply() API
+        records = []
+        for feat, grp in combined.groupby("feature"):
+            agg_imp = np.average(grp["importance"].values, weights=grp["weight"].values)
+            records.append({"feature": feat, "importance": agg_imp})
+        aggregated = pd.DataFrame(records).sort_values("importance", ascending=False)
 
         return aggregated
 

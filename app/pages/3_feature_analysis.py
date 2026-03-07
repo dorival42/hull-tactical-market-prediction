@@ -211,8 +211,11 @@ with col_m3:
     """, unsafe_allow_html=True)
 
 st.markdown("")
-st.info("**Result:** 248 features → 100 selected. 68 features removed by high correlation filter. "
-        "Final selection combines scores: 50% LGBM importance + 25% correlation + 25% mutual info.")
+st.info(
+    f"**Result:** {n_total} features → {n_selected} selected. "
+    f"{n_total - n_selected} features removed (NaN threshold + high correlation filter + selection). "
+    "Final selection combines scores: 50% LGBM importance + 25% correlation + 25% mutual info."
+)
 
 # ── Correlation Heatmap (real data) ───────────────────────────────────────────
 if df is not None:

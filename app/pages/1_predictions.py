@@ -5,10 +5,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-from datetime import datetime
 
 # Ensure app/ is on sys.path so utils is importable
 _APP_DIR = Path(__file__).parent.parent
@@ -40,13 +38,70 @@ PLOTLY_DARK = dict(
     font=dict(color="#e2e8f0"),
 )
 
-from utils.artifacts import load_train_data as load_data  # noqa: E402
+from utils.artifacts import load_train_data as load_data, load_model_pkl  # noqa: E402
+
+
+# ── Real prediction helper ────────────────────────────────────────────────────
+
+def _get_predictions(df: pd.DataFrame, model_name: str) -> np.ndarray | None:
+    """
+    Run real inference using the saved model pkl.
+
+    Steps:
+    1. Load the pkl (model + feature_names).
+    2. Intersect saved feature_names with columns available in df.
+    3. fillna(0) to match training behaviour (training used fillna(0) after pipeline).
+    4. Call model.predict().
+
+    Returns None if the model file is missing or inference fails.
+    """
+    model_data = load_model_pkl(model_name)
+    if model_data is None:
+        return None
+
+    try:
+        # Ensemble stores a list of sub-models; individual models store the raw model directly.
+        if "models" in model_data:
+            # Ensemble: aggregate predictions from sub-models using saved weights
+            weights_map: dict = model_data.get("weights", {})
+            sub_preds = []
+            sub_weights = []
+            for sub in model_data["models"]:
+                feat_names = sub.get("feature_names") or model_data.get("feature_names", [])
+                avail = [f for f in feat_names if f in df.columns]
+                if not avail:
+                    continue
+                X = df[avail].fillna(0)
+                pred = sub["model"].predict(X)
+                sub_preds.append(pred)
+                sub_weights.append(weights_map.get(sub["name"], 1.0))
+            if not sub_preds:
+                return None
+            weights_arr = np.array(sub_weights)
+            weights_arr = weights_arr / weights_arr.sum()
+            return np.average(np.array(sub_preds), axis=0, weights=weights_arr)
+        else:
+            # Individual model
+            feat_names = model_data.get("feature_names") or []
+            avail = [f for f in feat_names if f in df.columns]
+            if not avail:
+                return None
+            X = df[avail].fillna(0)
+            return model_data["model"].predict(X)
+    except Exception:
+        return None
 
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
 st.sidebar.header("Filters")
-date_range = st.sidebar.selectbox("Time Range", ["Last 30 days", "Last 90 days", "Last 252 days", "Full history"], index=1)
-model_type = st.sidebar.selectbox("Model", ["Ensemble", "LightGBM", "XGBoost", "CatBoost", "RandomForest"])
+date_range = st.sidebar.selectbox(
+    "Time Range",
+    ["Last 30 days", "Last 90 days", "Last 252 days", "Full history"],
+    index=1,
+)
+model_type = st.sidebar.selectbox(
+    "Model", ["Ensemble", "LightGBM", "XGBoost", "CatBoost", "RandomForest"]
+)
 
 # Map to n recent trading days
 range_map = {"Last 30 days": 30, "Last 90 days": 90, "Last 252 days": 252, "Full history": 9000}
@@ -56,18 +111,26 @@ n_days = range_map[date_range]
 df_full = load_data()
 
 st.title("🔮 Predictions & Signal Analysis")
-st.markdown("Historical predictions, allocation signals, and error analysis based on real training data.")
+st.markdown("Historical predictions, allocation signals, and error analysis based on real trained models.")
 st.markdown("---")
 
 if df_full is not None:
-    df = df_full.tail(n_days).copy().reset_index(drop=True)
-    target = df["market_forward_excess_returns"].dropna()
+    df_slice = df_full.tail(n_days).copy().reset_index(drop=True)
+    target = df_slice["market_forward_excess_returns"].dropna()
+    df_for_pred = df_slice.loc[target.index].reset_index(drop=True)
+    target = target.reset_index(drop=True)
 
-    # Simulate predictions (model output ≈ smoothed actual + small noise)
-    np.random.seed(42 + hash(model_type) % 100)
-    noise_scale = {"LightGBM": 0.0055, "XGBoost": 0.0060, "CatBoost": 0.0057,
-                   "RandomForest": 0.0062, "Ensemble": 0.0053}[model_type]
-    predictions = target.values * 0.25 + np.random.randn(len(target)) * noise_scale
+    # ── Run real inference ─────────────────────────────────────────────────────
+    predictions = _get_predictions(df_for_pred, model_type)
+
+    if predictions is None:
+        st.warning(
+            f"⚠️ Model artifact for **{model_type}** not found in `artifacts/`. "
+            "Run `python scripts/retrain.py` to train the models first."
+        )
+        st.stop()
+
+    predictions = predictions[: len(target)]
     errors = target.values - predictions
     correct_dir = np.sign(predictions) == np.sign(target.values)
 
@@ -80,7 +143,6 @@ if df_full is not None:
     dir_acc = correct_dir.mean() * 100
     rmse = np.sqrt((errors ** 2).mean())
     direction = "📈 Bullish" if last_pred > 0 else "📉 Bearish"
-    signal_class = "bullish" if last_pred > 0 else "bearish"
 
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
@@ -100,6 +162,7 @@ if df_full is not None:
 
     # ── Signal + Allocation side by side ─────────────────────────────────────
     col_sig, col_alloc = st.columns([1, 2])
+    signal_class = "bullish" if last_pred > 0 else "bearish"
     with col_sig:
         st.markdown("<div class='section-title'>Current Signal</div>", unsafe_allow_html=True)
         st.markdown(f"""
@@ -150,11 +213,11 @@ if df_full is not None:
             x=x_axis, y=predictions * 100, name="Predicted",
             line=dict(color="#00d4ff", width=2),
         ))
-        # Confidence band
-        std_pred = np.std(predictions) * 1.96
+        # Confidence band (±1 std of prediction errors)
+        std_err = np.std(errors) * 1.96
         fig_pred.add_trace(go.Scatter(
             x=x_axis + x_axis[::-1],
-            y=list((predictions + std_pred) * 100) + list((predictions - std_pred) * 100)[::-1],
+            y=list((predictions + std_err) * 100) + list((predictions - std_err) * 100)[::-1],
             fill="toself", fillcolor="rgba(0,212,255,0.07)",
             line=dict(color="rgba(0,0,0,0)"), name="95% CI", showlegend=True,
         ))
@@ -168,7 +231,6 @@ if df_full is not None:
     # ── Allocation History ────────────────────────────────────────────────────
     st.markdown("<div class='section-title'>Allocation Signal History</div>", unsafe_allow_html=True)
     fig_alloc = go.Figure()
-    alloc_colors = np.where(allocations > 1, "#10b981", "#ef4444")
     fig_alloc.add_trace(go.Bar(
         x=list(range(len(allocations))),
         y=allocations - 1,  # Center on 0
@@ -228,8 +290,13 @@ if df_full is not None:
     })
     st.dataframe(table_df.iloc[::-1], use_container_width=True, hide_index=True)
 
-    csv = pd.DataFrame({"prediction": predictions, "actual": target.values, "error": errors,
-                        "allocation": allocations}).to_csv(index=False)
+    csv = pd.DataFrame({
+        "prediction": predictions,
+        "actual": target.values,
+        "error": errors,
+        "allocation": allocations,
+    }).to_csv(index=False)
     st.download_button("⬇️ Download Predictions CSV", csv, "predictions.csv", "text/csv")
+
 else:
     st.error("Training data not found. Run the download script first.")

@@ -31,6 +31,7 @@ if _project_root not in sys.path:
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.python import PythonOperator
+from dags.utils.alert_utils import on_failure_callback
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +42,12 @@ DEFAULT_ARGS = {
     "owner": "hull-tactical",
     "depends_on_past": False,
     "retries": 3,
-    "retry_delay": timedelta(minutes=5),
+    "retry_delay": timedelta(minutes=1),
+    "retry_exponential_backoff": True,          # HIGH-15: 1m → 2m → 4m
+    "max_retry_delay": timedelta(minutes=30),
     "email_on_failure": False,
     "email_on_retry": False,
+    "on_failure_callback": on_failure_callback,  # HIGH-14: Slack + log alerting
 }
 
 CHROMADB_HOST = os.getenv("CHROMADB_HOST", "chromadb")
@@ -239,7 +243,7 @@ def _update_chromadb(**ctx) -> dict:
 with DAG(
     dag_id="dag_rag_update",
     description="Hourly: fetch financial news, embed with HuggingFace, update ChromaDB",
-    schedule_interval="30 14-22 * * 1-5",  # Offset by 30 min vs data pipeline
+    schedule="30 14-22 * * 1-5",           # HIGH-3: schedule_interval deprecated in 2.4+
     start_date=datetime(2025, 1, 1),
     catchup=False,
     max_active_runs=1,

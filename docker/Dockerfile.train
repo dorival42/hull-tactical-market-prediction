@@ -6,7 +6,7 @@ LABEL description="Hull Tactical Training Pipeline"
 
 # Set working directory
 WORKDIR /app
-
+RUN pip install uv
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
@@ -19,10 +19,10 @@ COPY requirements.txt .
 COPY requirements-dev.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN uv pip install --no-cache-dir -r requirements.txt
 
 # Install Kaggle CLI
-RUN pip install --no-cache-dir kaggle
+RUN uv pip install --no-cache-dir kaggle
 
 # Copy source code
 COPY src/ src/
