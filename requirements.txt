@@ -6,7 +6,7 @@ scikit-learn~=1.6.0
 # Gradient Boosting
 lightgbm~=4.5.0
 xgboost~=2.1.0
-catboost~=1.2.0
+# catboost excluded: no Python 3.13 wheel available; only needed for training (src/)
 
 # MLflow & Experiment Tracking
 mlflow~=2.14.0
