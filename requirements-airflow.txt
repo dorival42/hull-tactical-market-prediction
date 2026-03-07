@@ -12,13 +12,13 @@ yfinance~=0.2.40                            # S&P 500 OHLCV data
 newsapi-python~=0.2.7                       # NewsAPI client
 requests~=2.31.0
 
-# --- Core ML stack (must match requirements.txt to avoid version drift) ---
+# --- Core ML stack (pinned for Python 3.11 / Airflow — intentionally separate from requirements.txt) ---
 numpy~=1.26.0
 pandas~=2.1.0
 scikit-learn~=1.4.0
 lightgbm~=4.3.0
 xgboost~=2.0.0
-catboost~=1.2.0
+catboost~=1.2.0  # Python 3.11 has pre-built wheels
 
 # --- MLflow ---
 mlflow~=2.11.0
