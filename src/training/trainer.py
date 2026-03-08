@@ -1,6 +1,8 @@
 """Training orchestrator with MLflow integration and advanced preprocessing."""
 
 import json
+import os
+import re
 import time
 from datetime import datetime
 from pathlib import Path
@@ -86,8 +88,6 @@ class MLflowTrainer:
     def _setup_mlflow(self) -> None:
         """Setup MLflow tracking with DagsHub authentication."""
         try:
-            import os
-            import re
             import mlflow
 
             # Inject DagsHub credentials if not already set as MLflow env vars.
