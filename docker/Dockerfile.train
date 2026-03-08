@@ -21,7 +21,7 @@ COPY requirements-dev.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Kaggle CLI
-RUN  pip install --no-cache-dir kaggle
+RUN pip install --no-cache-dir kaggle
 
 # Copy source code
 COPY src/ src/
