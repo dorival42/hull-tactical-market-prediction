@@ -282,8 +282,9 @@ def load_model_pkl(model_name: str):
         # Individual models: {"model": ..., "feature_names": ...}
         # Ensemble: {"models": [...], "feature_names": ...}
         return data
-    except Exception:
-        return None
+    except Exception as e:
+        import traceback
+        return {"_load_error": f"{type(e).__name__}: {e}\n{traceback.format_exc()}"}
 
 
 # ── Convenience helpers ──────────────────────────────────────────────────────
