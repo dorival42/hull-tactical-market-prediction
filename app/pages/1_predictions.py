@@ -132,14 +132,7 @@ if df_full is not None:
     predictions = _get_predictions(df_for_pred, model_type)
 
     if predictions is None:
-        if model_type in ("CatBoost", "Ensemble"):
-            st.warning(
-                f"⚠️ **{model_type}** requires the `catboost` library which is not available "
-                "on Python 3.13 (Streamlit Cloud). "
-                "Select **LightGBM**, **XGBoost**, or **RandomForest** to view predictions."
-            )
-        else:
-            pkl_path = ARTIFACTS_DIR / _PKL_MAP.get(model_type, "")
+        pkl_path = ARTIFACTS_DIR / _PKL_MAP.get(model_type, "")
             if pkl_path.exists():
                 st.error(
                     f"⚠️ **{model_type}** artifact found but failed to load — "

@@ -7,7 +7,7 @@ name = "hull-tactical"
 version = "1.0.0"
 description = "Hull Tactical Market Prediction - Kaggle Competition"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.13"
 license = {text = "MIT"}
 authors = [
     {name = "Hull Tactical Team"}
@@ -42,7 +42,7 @@ dependencies = [
     "streamlit>=1.44.0",
     "grpcio>=1.68.0",
     "protobuf>=4.25.0",
-    "pyarrow>=18.0.0",
+    "pyarrow>=4.0.0,<16",
     "tqdm>=4.66.0",
     "joblib>=1.4.0",
     "scipy>=1.14.0",
