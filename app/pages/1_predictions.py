@@ -133,19 +133,19 @@ if df_full is not None:
 
     if predictions is None:
         pkl_path = ARTIFACTS_DIR / _PKL_MAP.get(model_type, "")
-            if pkl_path.exists():
-                st.error(
-                    f"⚠️ **{model_type}** artifact found but failed to load — "
-                    "likely a package version mismatch between training and deployment. "
-                    f"`{pkl_path.name}` was saved with the local environment "
-                    "(scikit-learn 1.7, xgboost 3.1, lightgbm 4.5). "
-                    "Check that `requirements.txt` matches those versions."
-                )
-            else:
-                st.warning(
-                    f"⚠️ Model artifact for **{model_type}** not found in `artifacts/`. "
-                    "Run `python scripts/retrain.py` to train the models first."
-                )
+        if pkl_path.exists():
+            st.error(
+                f"⚠️ **{model_type}** artifact found but failed to load — "
+                "likely a package version mismatch between training and deployment. "
+                f"`{pkl_path.name}` was saved with the local environment "
+                "(scikit-learn 1.7, xgboost 3.1, lightgbm 4.5). "
+                "Check that `requirements.txt` matches those versions."
+            )
+        else:
+            st.warning(
+                f"⚠️ Model artifact for **{model_type}** not found in `artifacts/`. "
+                "Run `python scripts/retrain.py` to train the models first."
+            )
         st.stop()
 
     predictions = predictions[: len(target)]
