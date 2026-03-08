@@ -84,9 +84,24 @@ class MLflowTrainer:
         self.feature_cols: list[str] = []
 
     def _setup_mlflow(self) -> None:
-        """Setup MLflow tracking."""
+        """Setup MLflow tracking with DagsHub authentication."""
         try:
+            import os
+            import re
             import mlflow
+
+            # Inject DagsHub credentials if not already set as MLflow env vars.
+            # Works for local runs (.env has DAGSHUB_TOKEN) and CI
+            # (MLFLOW_TRACKING_USERNAME / PASSWORD already set via secrets).
+            if not os.getenv("MLFLOW_TRACKING_USERNAME") and self.tracking_uri:
+                match = re.search(r"dagshub\.com/([^/]+)/", self.tracking_uri)
+                if match:
+                    os.environ.setdefault(
+                        "MLFLOW_TRACKING_USERNAME", match.group(1)
+                    )
+                token = os.getenv("DAGSHUB_TOKEN", "")
+                if token:
+                    os.environ.setdefault("MLFLOW_TRACKING_PASSWORD", token)
 
             mlflow.set_tracking_uri(self.tracking_uri)
             mlflow.set_experiment(self.experiment_name)
