@@ -31,7 +31,7 @@ if _project_root not in sys.path:
 from airflow import DAG
 from airflow.models import Variable
 from airflow.operators.python import PythonOperator
-from dags.utils.alert_utils import on_failure_callback
+from utils.alert_utils import on_failure_callback
 
 logger = logging.getLogger(__name__)
 
