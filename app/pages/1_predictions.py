@@ -38,7 +38,15 @@ PLOTLY_DARK = dict(
     font=dict(color="#e2e8f0"),
 )
 
-from utils.artifacts import load_train_data as load_data, load_model_pkl  # noqa: E402
+from utils.artifacts import load_train_data as load_data, load_model_pkl, ARTIFACTS_DIR  # noqa: E402
+
+_PKL_MAP = {
+    "LightGBM":     "lightgbm_final.pkl",
+    "XGBoost":      "xgboost_final.pkl",
+    "CatBoost":     "catboost_final.pkl",
+    "RandomForest": "random_forest_final.pkl",
+    "Ensemble":     "ensemble_final.pkl",
+}
 
 
 # ── Real prediction helper ────────────────────────────────────────────────────
@@ -131,10 +139,20 @@ if df_full is not None:
                 "Select **LightGBM**, **XGBoost**, or **RandomForest** to view predictions."
             )
         else:
-            st.warning(
-                f"⚠️ Model artifact for **{model_type}** not found in `artifacts/`. "
-                "Run `python scripts/retrain.py` to train the models first."
-            )
+            pkl_path = ARTIFACTS_DIR / _PKL_MAP.get(model_type, "")
+            if pkl_path.exists():
+                st.error(
+                    f"⚠️ **{model_type}** artifact found but failed to load — "
+                    "likely a package version mismatch between training and deployment. "
+                    f"`{pkl_path.name}` was saved with the local environment "
+                    "(scikit-learn 1.7, xgboost 3.1, lightgbm 4.5). "
+                    "Check that `requirements.txt` matches those versions."
+                )
+            else:
+                st.warning(
+                    f"⚠️ Model artifact for **{model_type}** not found in `artifacts/`. "
+                    "Run `python scripts/retrain.py` to train the models first."
+                )
         st.stop()
 
     predictions = predictions[: len(target)]

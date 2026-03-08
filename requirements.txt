@@ -5,10 +5,10 @@ plotly~=5.20.0
 streamlit~=1.44.0
 kaggle~=1.6.0          # lazy import in artifacts.py for data download
 
-# ML inference (confirmed Python 3.13 wheels — needed to load pkl models)
-scikit-learn~=1.6.0
-lightgbm~=4.5.0
-xgboost~=2.1.0
+# ML inference — versions must match pkl serialization (saved locally with these)
+scikit-learn~=1.7.0    # local: 1.7.2 — Python 3.13 wheels available
+lightgbm>=4.5.0,<5.0   # local: 4.5.0 — allow newer 4.x with Python 3.13 wheels
+xgboost~=3.1.0         # local: 3.1.1 — pkl incompatible with 2.x, Python 3.13 wheels available
 scipy~=1.14.0
 
 # ─── Training / Docker / CI only ─────────────────────────────────────────────
