@@ -147,8 +147,14 @@ artifacts/
 !artifacts/feature_importance.json
 !artifacts/selected_features.json
 !artifacts/preprocessing_info.json
+!artifacts/preprocessing_config.json
 *.pkl
 *.joblib
+# Final model artifacts tracked for Streamlit Cloud inference (lightweight: <10 MB total)
+!artifacts/lightgbm_final.pkl
+!artifacts/xgboost_final.pkl
+!artifacts/random_forest_final.pkl
+!artifacts/ensemble_final.pkl
 catboost_info/
 mlruns/
 *.parquet

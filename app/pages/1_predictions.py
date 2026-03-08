@@ -100,7 +100,7 @@ date_range = st.sidebar.selectbox(
     index=1,
 )
 model_type = st.sidebar.selectbox(
-    "Model", ["Ensemble", "LightGBM", "XGBoost", "CatBoost", "RandomForest"]
+    "Model", ["LightGBM", "XGBoost", "RandomForest", "Ensemble", "CatBoost"]
 )
 
 # Map to n recent trading days
@@ -124,10 +124,17 @@ if df_full is not None:
     predictions = _get_predictions(df_for_pred, model_type)
 
     if predictions is None:
-        st.warning(
-            f"⚠️ Model artifact for **{model_type}** not found in `artifacts/`. "
-            "Run `python scripts/retrain.py` to train the models first."
-        )
+        if model_type in ("CatBoost", "Ensemble"):
+            st.warning(
+                f"⚠️ **{model_type}** requires the `catboost` library which is not available "
+                "on Python 3.13 (Streamlit Cloud). "
+                "Select **LightGBM**, **XGBoost**, or **RandomForest** to view predictions."
+            )
+        else:
+            st.warning(
+                f"⚠️ Model artifact for **{model_type}** not found in `artifacts/`. "
+                "Run `python scripts/retrain.py` to train the models first."
+            )
         st.stop()
 
     predictions = predictions[: len(target)]
