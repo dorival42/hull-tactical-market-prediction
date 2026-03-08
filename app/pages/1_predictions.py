@@ -64,7 +64,7 @@ def _get_predictions(df: pd.DataFrame, model_name: str) -> np.ndarray | None:
     Returns None if the model file is missing or inference fails.
     """
     model_data = load_model_pkl(model_name)
-    if model_data is None or "_load_error" in model_data:
+    if model_data is None:
         return None
 
     try:
@@ -134,8 +134,6 @@ if df_full is not None:
     if predictions is None:
         pkl_path = ARTIFACTS_DIR / _PKL_MAP.get(model_type, "")
         if pkl_path.exists():
-            model_data = load_model_pkl(model_type)
-            load_error = model_data.get("_load_error") if isinstance(model_data, dict) else None
             st.error(
                 f"⚠️ **{model_type}** artifact found but failed to load — "
                 "likely a package version mismatch between training and deployment. "
@@ -143,9 +141,6 @@ if df_full is not None:
                 "(scikit-learn 1.7, xgboost 3.1, lightgbm 4.5). "
                 "Check that `requirements.txt` matches those versions."
             )
-            if load_error:
-                with st.expander("🔍 Error details"):
-                    st.code(load_error)
         else:
             st.warning(
                 f"⚠️ Model artifact for **{model_type}** not found in `artifacts/`. "

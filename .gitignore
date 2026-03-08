@@ -133,6 +133,7 @@ cython_debug/
 # IDE
 .idea/
 .vscode/
+pyrightconfig.json
 *.swp
 *.swo
 *~
@@ -165,6 +166,9 @@ train.csv
 test.csv
 *.csv
 !configs/*.yaml
+# Pre-engineered features for Streamlit Cloud inference (no pipeline.joblib needed)
+!artifacts/data/
+!artifacts/data/train_features.csv
 
 # Model files
 *.h5

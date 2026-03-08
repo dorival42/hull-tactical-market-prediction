@@ -26,7 +26,8 @@ _APP_DIR   = _UTILS_DIR.parent              # app/
 _ROOT      = _APP_DIR.parent                # project root
 
 ARTIFACTS_DIR = _ROOT / "artifacts"
-DATA_PATH     = ARTIFACTS_DIR / "data" / "train.csv"
+DATA_PATH          = ARTIFACTS_DIR / "data" / "train.csv"
+DATA_FEATURES_PATH = ARTIFACTS_DIR / "data" / "train_features.csv"
 
 # ── File paths ───────────────────────────────────────────────────────────────
 METRICS_PATH         = ARTIFACTS_DIR / "metrics.json"
@@ -169,12 +170,14 @@ def _kaggle_download() -> bool:
 @st.cache_data(show_spinner=False)
 def load_train_data() -> Optional[pd.DataFrame]:
     """
-    Load the Kaggle training CSV from artifacts/data/train.csv.
+    Load training data for the app.
 
-    If the file is absent (e.g. first run on Streamlit Cloud), tries to
-    download it automatically using KAGGLE_USERNAME / KAGGLE_KEY credentials
-    stored in Streamlit secrets or environment variables.
+    Prefers train_features.csv (pre-engineered 100 features — ready for
+    model inference). Falls back to raw train.csv + Kaggle download.
     """
+    if DATA_FEATURES_PATH.exists():
+        return pd.read_csv(DATA_FEATURES_PATH)
+
     if DATA_PATH.exists():
         return pd.read_csv(DATA_PATH)
 
@@ -282,9 +285,8 @@ def load_model_pkl(model_name: str):
         # Individual models: {"model": ..., "feature_names": ...}
         # Ensemble: {"models": [...], "feature_names": ...}
         return data
-    except Exception as e:
-        import traceback
-        return {"_load_error": f"{type(e).__name__}: {e}\n{traceback.format_exc()}"}
+    except Exception:
+        return None
 
 
 # ── Convenience helpers ──────────────────────────────────────────────────────
