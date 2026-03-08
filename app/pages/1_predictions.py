@@ -108,7 +108,7 @@ date_range = st.sidebar.selectbox(
     index=1,
 )
 model_type = st.sidebar.selectbox(
-    "Model", ["LightGBM", "XGBoost", "RandomForest", "Ensemble", "CatBoost"]
+    "Model", ["Ensemble", "LightGBM", "XGBoost", "CatBoost", "RandomForest"]
 )
 
 # Map to n recent trading days
