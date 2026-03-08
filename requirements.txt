@@ -19,9 +19,6 @@ scipy~=1.14.0
 mlflow~=2.14.0
 dagshub~=0.3.0
 
-# Data loading
-kaggle~=1.6.0
-
 # Configuration
 pyyaml~=6.0
 python-dotenv~=1.0.0
